@@ -45,13 +45,20 @@ export const LEVELS = {
   groundFloor: 1.54,
   /** Ground floor clear ceiling — 2.60 m clear. */
   groundCeiling: 4.14,
-  /** Top of the roof structural slab (0.15 m). */
-  roofSlab: 4.29,
+  /**
+   * Soffit of the roof structure — 2.75 m above the ground floor, which is the dimension the
+   * sections carry (and mirrors −1.61 → +1.14 at the basement). The 0.15 m between this and
+   * the finished ceiling is a void, not a slab; the 0.40 m above it is the roof build-up.
+   */
+  roofSoffit: 4.29,
   /** Underside of the projecting band that runs round the building. */
   palaBottom: 4.29,
   /** Top of that band — it is 0.30 m deep and projects 0.30 m. */
   palaTop: 4.59,
-  /** Finished roof surface: washed gravel over asphalt membrane. */
+  /**
+   * Finished roof surface: washed gravel over asphalt membrane. The whole build-up from the
+   * soffit is 0.40 m, of which the lower 0.30 shows as the projecting band.
+   */
   roofSurface: 4.69,
   /** Top of the upstand/parapet that hides the roof. */
   parapetTop: 4.99,
@@ -116,8 +123,7 @@ export interface Wall {
 
 const G_HEAD = 3.74 // ground floor lintel level
 const G_SILL_HIGH = 2.54 // ordinary window sill: 1.00 m above the floor
-const C_HEAD = 0.59 // basement lintel level
-const C_SILL_HIGH = -0.41 // basement window sill: 1.20 m opening
+const C_HEAD = 0.59 // basement lintel level — every basement opening heads here
 
 const french = (from: number, to: number, label?: string): Opening => ({
   from,
@@ -184,8 +190,9 @@ export const GROUND_WALLS: Wall[] = [
     exterior: true,
     openings: [
       // The entrance is a 2.30 m recess split by a 0.30 m pillar into two 1.00 m bays.
-      { from: 4.353, to: 5.353, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'entrance', label: 'Entrada' },
-      { from: 5.653, to: 6.653, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'french', label: 'Cozinha' },
+      { from: 4.353, to: 5.353, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'entrance', label: 'Entrada — Átrio' },
+      // The kitchen never reaches the front wall; this leaf lights the stair hall.
+      { from: 5.653, to: 6.653, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'french', label: 'Átrio / escadas' },
       window_(8.753, 9.754, 'I.s.'),
       french(11.254, 13.255, 'Quarto'),
     ],
@@ -225,7 +232,7 @@ export const GROUND_WALLS: Wall[] = [
     run: 'x',
     at: 3.9,
     from: 5.453,
-    to: SIZE.width,
+    to: 13.655,
     thickness: SIZE.wallInt,
     openings: [door(8.653, 9.454, 'Quarto'), door(9.754, 10.554, 'Quarto')],
   },
@@ -257,7 +264,7 @@ export const GROUND_WALLS: Wall[] = [
     run: 'x',
     at: 5.201,
     from: 7.953,
-    to: 11.104,
+    to: 11.154,
     thickness: SIZE.wallInt,
     openings: [door(10.154, 10.954, 'Quarto 16 m²')],
   },
@@ -274,23 +281,17 @@ export const GROUND_WALLS: Wall[] = [
     openings: [door(6.251, 7.051, 'Quarto 16 m²'), door(8.751, 9.551, 'I.s.')],
   },
   { id: 'g-p9', level: 'ground', run: 'x', at: 8.101, from: 6.753, to: 9.954, thickness: SIZE.wallInt },
-  { id: 'g-p10', level: 'ground', run: 'y', at: 6.803, from: 8.051, to: 10.151, thickness: SIZE.wallInt },
+  { id: 'g-p10', level: 'ground', run: 'y', at: 6.803, from: 8.101, to: 10.151, thickness: SIZE.wallInt },
   { id: 'g-p11', level: 'ground', run: 'x', at: 7.601, from: 2.952, to: 3.953, thickness: SIZE.wallInt },
-  { id: 'g-p12', level: 'ground', run: 'y', at: 3.702, from: 7.601, to: 8.901, thickness: SIZE.wallInt },
-  { id: 'g-p13', level: 'ground', run: 'y', at: 3.602, from: 8.901, to: 10.151, thickness: SIZE.wallInt },
+  // The Cozinha/Átrio wall is a thin partition for its upper run, then thickens to 0.296 —
+  // a duct block — for the last 1.19 m down to the front wall.
+  { id: 'g-p12', level: 'ground', run: 'y', at: 3.704, from: 7.651, to: 8.963, thickness: 0.101 },
+  { id: 'g-p13', level: 'ground', run: 'y', at: 3.802, from: 8.963, to: 10.151, thickness: 0.296 },
   // Stair core — the west wall of the stairwell, hatched on the plan
   { id: 'g-p14', level: 'ground', run: 'y', at: 5.503, from: 5.201, to: 8.851, thickness: SIZE.wallInt },
 
-  // The pillar that splits the entrance recess
-  {
-    id: 'g-pillar',
-    level: 'ground',
-    run: 'y',
-    at: 5.503,
-    from: SIZE.depth - 0.35,
-    to: SIZE.depth,
-    thickness: 0.3,
-  },
+  // The pillar that splits the entrance recess — 0.30 × 0.31, standing off the inner face.
+  { id: 'g-pillar', level: 'ground', run: 'y', at: 5.503, from: 10.151, to: 10.461, thickness: 0.3 },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -334,9 +335,11 @@ export const CAVE_WALLS: Wall[] = [
     to: SIZE.depth,
     thickness: SIZE.wallExt,
     exterior: true,
+    // The two left-hand windows share a head but not a sill: the elevation draws the wider
+    // one 1.20 m tall and the narrower one 1.00 m.
     openings: [
-      { from: 4.751, to: 6.751, sill: C_SILL_HIGH, head: C_HEAD, kind: 'window', label: 'Garagem' },
-      { from: 7.951, to: 9.451, sill: C_SILL_HIGH, head: C_HEAD - 0.2, kind: 'window', label: 'Lavandaria' },
+      { from: 4.751, to: 6.751, sill: C_HEAD - 1.2, head: C_HEAD, kind: 'window', label: 'Garagem' },
+      { from: 7.951, to: 9.451, sill: C_HEAD - 1.0, head: C_HEAD, kind: 'window', label: 'I.s. / Lavandaria' },
     ],
   },
   {
@@ -382,59 +385,182 @@ export const CAVE_WALLS: Wall[] = [
 // Rooms — the labels printed on the plans, with the clear floor area they enclose.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * A room, as one or more rectangles of clear floor.
+ *
+ * The rectangles are not decoration: their total area reproduces the figure printed on the
+ * drawing to within a few centimetres in every case, which is how the layout below was
+ * checked. The Garagem, for instance, comes out at 104.1 m² against a printed 104,3.
+ */
 export interface Room {
   name: string
   /** Area exactly as printed on the drawing. */
   area: string
   level: Level
-  x0: number
-  y0: number
-  x1: number
-  y1: number
+  rects: ReadonlyArray<readonly [number, number, number, number]>
   kind: 'living' | 'bed' | 'bath' | 'kitchen' | 'circulation' | 'utility' | 'garage'
 }
 
 export const ROOMS: Room[] = [
-  // Ground floor
-  { name: 'Sala', area: '36,7 m²', level: 'ground', x0: 0.35, y0: 0.35, x1: 5.453, y1: 8.851, kind: 'living' },
-  { name: 'Quarto', area: '14,0 / 12,4 m²', level: 'ground', x0: 5.553, y0: 0.35, x1: 9.554, y1: 3.851, kind: 'bed' },
-  { name: 'Quarto', area: '14,0 / 12,4 m²', level: 'ground', x0: 9.654, y0: 0.35, x1: 13.655, y1: 3.851, kind: 'bed' },
-  { name: 'I.s.', area: '5,0 m²', level: 'ground', x0: 11.154, y0: 3.95, x1: 13.655, y1: 5.951, kind: 'bath' },
-  { name: 'Quarto', area: '16,0 m²', level: 'ground', x0: 9.954, y0: 5.251, x1: 13.655, y1: 10.151, kind: 'bed' },
-  { name: 'Vest.', area: '5,0 m²', level: 'ground', x0: 8.053, y0: 5.251, x1: 9.854, y1: 8.051, kind: 'circulation' },
-  { name: 'I.s.', area: '6,0 m²', level: 'ground', x0: 6.853, y0: 8.151, x1: 9.854, y1: 10.151, kind: 'bath' },
-  { name: 'Cozinha', area: '8,3 m²', level: 'ground', x0: 0.35, y0: 7.651, x1: 3.652, y1: 10.151, kind: 'kitchen' },
-  { name: 'Átrio', area: '5,6 m²', level: 'ground', x0: 3.752, y0: 7.651, x1: 5.453, y1: 10.151, kind: 'circulation' },
-  { name: 'Hall', area: '', level: 'ground', x0: 8.053, y0: 3.95, x1: 11.054, y1: 5.151, kind: 'circulation' },
-  // Basement
-  { name: 'Garagem', area: '104,3 m²', level: 'cave', x0: 0.35, y0: 0.35, x1: 13.655, y1: 7.551, kind: 'garage' },
-  { name: 'Lavandaria', area: '8,7 m²', level: 'cave', x0: 1.952, y0: 7.651, x1: 5.453, y1: 10.151, kind: 'utility' },
-  { name: 'I.s.', area: '3,7 m²', level: 'cave', x0: 0.35, y0: 7.651, x1: 1.852, y1: 10.151, kind: 'bath' },
+  // ── Ground floor ──────────────────────────────────────────────────────────
+  {
+    name: 'Sala',
+    area: '36,7 m²',
+    level: 'ground',
+    kind: 'living',
+    // The printed 36,7 m² is the first rectangle alone; the room also opens east into the bay
+    // between the bedroom corridor wall and the stair core, with nothing dividing them.
+    rects: [
+      [0.35, 0.35, 5.453, 7.551],
+      [5.453, 3.95, 7.953, 5.151],
+    ],
+  },
+  { name: 'Quarto', area: '14,0 / 12,4 m²', level: 'ground', kind: 'bed', rects: [[5.553, 0.35, 9.554, 3.851]] },
+  { name: 'Quarto', area: '14,0 / 12,4 m²', level: 'ground', kind: 'bed', rects: [[9.654, 0.35, 13.655, 3.851]] },
+  { name: 'I.s.', area: '5,0 m²', level: 'ground', kind: 'bath', rects: [[11.154, 3.95, 13.655, 5.951]] },
+  {
+    name: 'Quarto',
+    area: '16,0 m²',
+    level: 'ground',
+    kind: 'bed',
+    // L-shaped: the main room plus the return north of the ensuite.
+    rects: [
+      [9.954, 6.051, 13.655, 10.151],
+      [9.954, 5.251, 11.054, 6.051],
+    ],
+  },
+  { name: 'Vest.', area: '5,0 m²', level: 'ground', kind: 'circulation', rects: [[8.053, 5.251, 9.854, 8.051]] },
+  { name: 'I.s.', area: '6,0 m²', level: 'ground', kind: 'bath', rects: [[6.853, 8.151, 9.854, 10.151]] },
+  { name: 'Cozinha', area: '8,3 m²', level: 'ground', kind: 'kitchen', rects: [[0.35, 7.651, 3.652, 10.151]] },
+  {
+    name: 'Átrio',
+    area: '5,6 m²',
+    level: 'ground',
+    kind: 'circulation',
+    rects: [
+      [3.752, 7.651, 5.453, 10.151],
+      [5.553, 8.851, 6.753, 10.151],
+    ],
+  },
+  { name: 'Corredor', area: '', level: 'ground', kind: 'circulation', rects: [[8.053, 3.95, 11.054, 5.151]] },
+
+  // ── Basement ──────────────────────────────────────────────────────────────
+  {
+    name: 'Garagem',
+    area: '104,3 m²',
+    level: 'cave',
+    kind: 'garage',
+    // Wraps round the stair core and the laundry block.
+    rects: [
+      [0.35, 0.35, 5.453, 7.551],
+      [5.453, 0.35, 13.655, 5.151],
+      [8.053, 5.151, 13.655, 10.151],
+    ],
+  },
+  { name: 'Lavandaria', area: '8,7 m²', level: 'cave', kind: 'utility', rects: [[1.952, 7.651, 5.453, 10.151]] },
+  { name: 'I.s.', area: '3,7 m²', level: 'cave', kind: 'bath', rects: [[0.35, 7.651, 1.852, 10.151]] },
 ]
+
+/** Total clear floor area of a room, for checking against the printed figure. */
+export function roomArea(r: Room): number {
+  return r.rects.reduce((a, [x0, y0, x1, y1]) => a + (x1 - x0) * (y1 - y0), 0)
+}
+
+/** Centre of a room's largest rectangle — where its label sits. */
+export function roomCentre(r: Room): [number, number] {
+  const big = [...r.rects].sort((a, b) => (b[2] - b[0]) * (b[3] - b[1]) - (a[2] - a[0]) * (a[3] - a[1]))[0]
+  return [(big[0] + big[2]) / 2, (big[1] + big[3]) / 2]
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The internal staircase, basement → ground floor.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * The internal staircase: a dog-leg with two parallel flights and a half-landing at the rear
+ * end of the well.
+ *
+ * 18 risers of 0.175 m, nine per flight, and eight goings of 0.300 m in each — the arithmetic
+ * closes exactly on the 3.150 m floor-to-floor, which is a good check that the levels are
+ * right. You come off the ground floor onto the west flight beside the Átrio, turn on the
+ * landing, and arrive in the basement beside the door to the garage.
+ */
 export const STAIR = {
   /** Stairwell enclosure, clear. */
   x0: 5.553,
   x1: 7.953,
   y0: 5.251,
   y1: 10.151,
-  /** Rises the full 3.15 m between floors. */
   bottom: LEVELS.caveFloor,
   top: LEVELS.groundFloor,
-  /**
-   * 18 risers of 0.175 m — that arithmetic closes exactly on the 3.150 m floor-to-floor,
-   * which is a good check that the levels are right. Straight flight, climbing towards the
-   * rear of the house.
-   */
-  steps: 18,
-  width: 1.1,
-  /** Clear at the foot of the flight, before the first riser. */
-  approach: 0.5,
+  /** Half-landing at the rear end of the well. */
+  landing: { y0: 5.251, y1: 6.451 },
+  /** Both flights run between these two y positions. */
+  flightFrom: 6.451,
+  flightTo: 8.851,
+  /** The two flights, either side of x = 6.753. */
+  westFlight: { x0: 5.553, x1: 6.753 },
+  eastFlight: { x0: 6.753, x1: 7.953 },
+  risersPerFlight: 9,
 }
+
+/**
+ * Fixed furniture, sanitary fittings and appliances, as drawn on the plans.
+ * Heights are conventional — the plans only give the footprint.
+ */
+export interface Fixture {
+  level: Level
+  kind: 'counter' | 'sink' | 'hob' | 'wardrobe' | 'wc' | 'basin' | 'bath' | 'shower' | 'appliance'
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+  /** Height above the floor. */
+  h: number
+  /** Height the object starts at, for wall-hung things. */
+  base?: number
+  label?: string
+}
+
+export const FIXTURES: Fixture[] = [
+  // ── Cozinha ───────────────────────────────────────────────────────────────
+  { level: 'ground', kind: 'counter', x0: 0.351, y0: 7.251, x1: 1.952, y1: 7.851, h: 0.9 },
+  { level: 'ground', kind: 'counter', x0: 0.351, y0: 7.851, x1: 0.952, y1: 9.551, h: 0.9 },
+  { level: 'ground', kind: 'counter', x0: 0.952, y0: 9.551, x1: 2.952, y1: 10.151, h: 0.9 },
+  { level: 'ground', kind: 'sink', x0: 0.427, y0: 8.251, x1: 0.877, y1: 9.176, h: 0.02, base: 0.88 },
+  { level: 'ground', kind: 'hob', x0: 1.702, y0: 9.601, x1: 2.202, y1: 10.101, h: 0.02, base: 0.9 },
+  { level: 'ground', kind: 'wardrobe', x0: 2.952, y0: 7.651, x1: 3.652, y1: 8.551, h: 2.2, label: 'despensa' },
+  { level: 'ground', kind: 'wardrobe', x0: 2.952, y0: 8.551, x1: 3.552, y1: 9.551, h: 2.2 },
+  // ── Átrio ─────────────────────────────────────────────────────────────────
+  { level: 'ground', kind: 'wardrobe', x0: 3.752, y0: 7.651, x1: 3.952, y1: 8.951, h: 2.2 },
+  { level: 'ground', kind: 'wardrobe', x0: 3.652, y0: 8.951, x1: 3.952, y1: 10.151, h: 2.2 },
+  // ── Quartos (built-in wardrobes against the party partition) ──────────────
+  { level: 'ground', kind: 'wardrobe', x0: 8.853, y0: 0.35, x1: 9.554, y1: 2.65, h: 2.2 },
+  { level: 'ground', kind: 'wardrobe', x0: 9.654, y0: 0.35, x1: 10.354, y1: 2.65, h: 2.2 },
+  // ── I.s. 5,0 m² ───────────────────────────────────────────────────────────
+  { level: 'ground', kind: 'bath', x0: 12.754, y0: 3.95, x1: 13.655, y1: 5.951, h: 0.55 },
+  { level: 'ground', kind: 'counter', x0: 11.154, y0: 5.451, x1: 11.954, y1: 5.951, h: 0.85 },
+  { level: 'ground', kind: 'basin', x0: 11.369, y0: 5.516, x1: 11.739, y1: 5.886, h: 0.14, base: 0.82 },
+  { level: 'ground', kind: 'wc', x0: 12.179, y0: 5.391, x1: 12.529, y1: 5.951, h: 0.42 },
+  // ── Vest. (walk-in wardrobe) ──────────────────────────────────────────────
+  { level: 'ground', kind: 'wardrobe', x0: 8.053, y0: 5.251, x1: 8.753, y1: 8.051, h: 2.2 },
+  { level: 'ground', kind: 'wardrobe', x0: 8.753, y0: 5.251, x1: 9.854, y1: 5.822, h: 2.2 },
+  { level: 'ground', kind: 'wardrobe', x0: 8.753, y0: 7.481, x1: 9.854, y1: 8.051, h: 2.2 },
+  // ── I.s. 6,0 m² ───────────────────────────────────────────────────────────
+  { level: 'ground', kind: 'shower', x0: 6.853, y0: 8.151, x1: 7.853, y1: 10.151, h: 0.06 },
+  { level: 'ground', kind: 'counter', x0: 8.604, y0: 8.151, x1: 9.854, y1: 8.651, h: 0.85 },
+  { level: 'ground', kind: 'basin', x0: 8.653, y0: 8.221, x1: 9.154, y1: 8.581, h: 0.14, base: 0.82 },
+  { level: 'ground', kind: 'basin', x0: 9.304, y0: 8.221, x1: 9.804, y1: 8.581, h: 0.14, base: 0.82 },
+  { level: 'ground', kind: 'wc', x0: 8.178, y0: 9.591, x1: 8.528, y1: 10.151, h: 0.42 },
+  // ── Cave: I.s. 3,7 m² ─────────────────────────────────────────────────────
+  { level: 'cave', kind: 'counter', x0: 1.35, y0: 7.651, x1: 1.85, y1: 8.451, h: 0.85 },
+  { level: 'cave', kind: 'wc', x0: 1.29, y0: 8.676, x1: 1.85, y1: 9.026, h: 0.42 },
+  { level: 'cave', kind: 'shower', x0: 0.35, y0: 9.251, x1: 1.85, y1: 10.151, h: 0.06 },
+  // ── Cave: Lavandaria ──────────────────────────────────────────────────────
+  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 7.701, x1: 2.6, y1: 8.301, h: 1.6, label: 'BC / AQS' },
+  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 8.801, x1: 2.6, y1: 9.401, h: 0.85, label: 'MSR' },
+  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 9.501, x1: 2.6, y1: 10.101, h: 0.85, label: 'MLR' },
+]
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Areas, from the site plan schedule.

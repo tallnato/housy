@@ -5,6 +5,8 @@ and published as a static site.
 
 **→ Live: https://tallnato.github.io/myhouse/**
 
+![The house and its plot](docs/preview.png)
+
 <!-- prettier-ignore -->
 > The drawings themselves are not in this repository, and neither is anything that would locate
 > the house. See [Privacy](#privacy).
@@ -20,6 +22,10 @@ and published as a static site.
   inspiration-image feature plugs into later.
 - **Read it.** Room names and areas float over the model, and the drawing's area schedule is
   in the panel.
+
+Pick a floor and the roof and everything above it peels away:
+
+![Ground floor with the roof off](docs/plan.png)
 
 ## The model is data, not a mesh
 
@@ -73,6 +79,24 @@ Plan coordinates in metres, exactly as the plans are drawn:
 
 The renderer maps plan `(x, y)` → world `(x, z)` and elevation → world `y`, so **+Y is up and
 +Z faces the street**.
+
+## Linking to a view
+
+The viewer keeps its state in the URL, so any view is a link you can send someone.
+
+| Parameter | Values | |
+|---|---|---|
+| `view` | `axo` `principal` `posterior` `esquerdo` `direito` `topo` | viewpoint |
+| `floor` | `cave` `ground` | isolate one floor |
+| `roof` | `0` | take the roof off |
+| `scheme` | `as-specified` `warm-minimal` `dark-contrast` `white-model` | finishes |
+| `sun` | `azimuth,altitude` in degrees | e.g. `330,38` |
+| `ui` | `0` | hide the chrome, for embedding |
+| `labels` | `0` | hide the room names |
+
+```
+https://tallnato.github.io/myhouse/?view=topo&floor=cave&roof=0
+```
 
 ## Running it
 

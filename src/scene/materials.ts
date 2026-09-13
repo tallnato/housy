@@ -64,17 +64,21 @@ function grainTexture(kind: NonNullable<Finish['grain']>): THREE.Texture | null 
       }
       break
     case 'wood':
+      // Board-to-board variation only — enough to read as boards, not enough to stripe.
       for (let y = 0; y < size; y += 16) {
-        ctx.fillStyle = `rgb(${118 + Math.random() * 26},${118 + Math.random() * 26},${118 + Math.random() * 26})`
+        const v = 124 + Math.random() * 9
+        ctx.fillStyle = `rgb(${v},${v},${v})`
         ctx.fillRect(0, y, size, 15)
+        ctx.fillStyle = 'rgba(96,96,96,0.35)'
+        ctx.fillRect(0, y + 15, size, 1)
       }
-      noise(0.05, 1)
+      noise(0.03, 1)
       break
     case 'tile':
       ctx.fillStyle = '#8a8a8a'
       ctx.fillRect(0, 0, size, size)
-      ctx.strokeStyle = '#6e6e6e'
-      ctx.lineWidth = 2
+      ctx.strokeStyle = '#7b7b7b'
+      ctx.lineWidth = 1.5
       for (let i = 0; i <= size; i += 64) {
         ctx.beginPath()
         ctx.moveTo(i, 0)
@@ -104,7 +108,7 @@ const REPEAT: Partial<Record<NonNullable<Finish['grain']>, number>> = {
   render: 1.4,
   concrete: 1.2,
   gravel: 2.2,
-  wood: 1.6,
+  wood: 2.4,
   tile: 1.2,
   grass: 0.35,
 }
@@ -177,24 +181,5 @@ export class MaterialLibrary {
       mat.depthWrite = !transparent
       this.applyGrain(mat, finish)
     }
-  }
-
-  /**
-   * Ghost mode: everything above the floor you are looking at fades out so you can see in.
-   * Called with 1 to restore.
-   */
-  setGroupOpacity(root: THREE.Object3D, opacity: number) {
-    root.traverse((o) => {
-      const mesh = o as THREE.Mesh
-      if (!mesh.isMesh) return
-      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-      for (const m of mats) {
-        const sm = m as THREE.MeshStandardMaterial
-        if (sm.name === 'glass') continue
-        sm.transparent = opacity < 1
-        sm.opacity = opacity
-        sm.depthWrite = opacity >= 1
-      }
-    })
   }
 }

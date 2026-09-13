@@ -22,6 +22,8 @@ export type SurfaceId =
   | 'floorWet'
   | 'floorGarage'
   | 'stair'
+  | 'joinery' // fitted cupboards, worktops
+  | 'sanitary' // baths, basins, WCs, shower trays
   | 'terrace'
   | 'driveway'
   | 'boundaryWall'
@@ -72,6 +74,8 @@ export const AS_SPECIFIED: Scheme = {
     floorWet: { color: '#d9d6d0', roughness: 0.35, metalness: 0, grain: 'tile' },
     floorGarage: { color: '#8e8e8b', roughness: 0.9, metalness: 0, grain: 'concrete' },
     stair: { color: '#d8d5cf', roughness: 0.7, metalness: 0 },
+    joinery: { color: '#d7cfc2', roughness: 0.55, metalness: 0, grain: 'wood' },
+    sanitary: { color: '#f6f7f7', roughness: 0.18, metalness: 0.02 },
     terrace: { color: '#b9b4aa', roughness: 0.9, metalness: 0, grain: 'concrete' },
     driveway: { color: '#8a8781', roughness: 0.95, metalness: 0, grain: 'concrete' },
     boundaryWall: { color: '#efeeea', roughness: 0.95, metalness: 0, grain: 'render' },
@@ -90,6 +94,7 @@ export const WARM_MINIMAL: Scheme = {
     pala: { color: '#fdfcf9', roughness: 0.85, metalness: 0, grain: 'render' },
     parapet: { color: '#fdfcf9', roughness: 0.85, metalness: 0, grain: 'render' },
     frame: { color: '#8a6a45', roughness: 0.7, metalness: 0.05 },
+    joinery: { color: '#b98f5f', roughness: 0.6, metalness: 0, grain: 'wood' },
     roof: { color: '#cdc6b8', roughness: 1, metalness: 0, grain: 'gravel' },
     terrace: { color: '#d6cfc2', roughness: 0.85, metalness: 0, grain: 'concrete' },
     driveway: { color: '#b7b0a4', roughness: 0.95, metalness: 0, grain: 'concrete' },
@@ -107,6 +112,7 @@ export const DARK_CONTRAST: Scheme = {
     pala: { color: '#ffffff', roughness: 0.8, metalness: 0, grain: 'render' },
     parapet: { color: '#ffffff', roughness: 0.8, metalness: 0, grain: 'render' },
     frame: { color: '#232528', roughness: 0.4, metalness: 0.5 },
+    joinery: { color: '#33363a', roughness: 0.5, metalness: 0.05 },
     roof: { color: '#7d7973', roughness: 1, metalness: 0, grain: 'gravel' },
     boundaryWall: { color: '#e7e5e0', roughness: 0.95, metalness: 0, grain: 'render' },
   },

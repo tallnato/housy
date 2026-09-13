@@ -13,12 +13,14 @@
 import * as THREE from 'three'
 import {
   CAVE_WALLS,
+  FIXTURES,
   GROUND_WALLS,
   LEVELS,
   ROOF_EDGE,
   ROOMS,
   SIZE,
   STAIR,
+  type Fixture,
   type Level,
   type Opening,
   type Room,
@@ -42,7 +44,6 @@ export interface HouseParts {
   glazing: THREE.Group
   site: THREE.Group
   stairs: THREE.Group
-  furniture: THREE.Group
 }
 
 const box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d)
@@ -96,7 +97,7 @@ function buildWall(wall: Wall, lib: MaterialLibrary): THREE.Group {
   const ceil = wall.level === 'cave' ? LEVELS.caveCeiling : LEVELS.groundCeiling
   const base = wall.base ?? floor
   // Exterior walls run up behind the slab to the underside of the level above.
-  const top = wall.top ?? (wall.exterior ? (wall.level === 'cave' ? LEVELS.groundFloor : LEVELS.roofSlab) : ceil)
+  const top = wall.top ?? (wall.exterior ? (wall.level === 'cave' ? LEVELS.groundFloor : LEVELS.roofSoffit) : ceil)
 
   const mat = lib.get(wall.exterior ? 'exteriorWall' : 'interiorWall')
   const openings = [...(wall.openings ?? [])].sort((a, b) => a.from - b.from)
@@ -216,8 +217,9 @@ function buildSlabs(lib: MaterialLibrary): Slabs {
   const gfThick = LEVELS.groundFloor - LEVELS.caveCeiling
   const overCave = mesh(box(W, gfThick, D), lib.get('ceiling'), SIZE.width / 2, LEVELS.caveCeiling + gfThick / 2, SIZE.depth / 2)
 
-  const roofThick = LEVELS.roofSlab - LEVELS.groundCeiling
-  const overGround = mesh(box(W, roofThick, D), lib.get('ceiling'), SIZE.width / 2, LEVELS.groundCeiling + roofThick / 2, SIZE.depth / 2)
+  // The 0.15 m void between the finished ceiling and the roof soffit.
+  const voidThick = LEVELS.roofSoffit - LEVELS.groundCeiling
+  const overGround = mesh(box(W, voidThick, D), lib.get('ceiling'), SIZE.width / 2, LEVELS.groundCeiling + voidThick / 2, SIZE.depth / 2)
 
   return { raft, overCave, overGround }
 }
@@ -283,12 +285,18 @@ function buildRoomFloors(level: Level, lib: MaterialLibrary): THREE.Group {
   const z = level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor
   for (const r of ROOMS) {
     if (r.level !== level) continue
-    const w = r.x1 - r.x0
-    const d = r.y1 - r.y0
-    const m = mesh(box(w, 0.02, d), lib.get(FLOOR_FINISH[r.kind]), r.x0 + w / 2, z + 0.011, r.y0 + d / 2)
-    m.castShadow = false
-    m.userData.room = r
-    g.add(m)
+    for (const [x0, y0, x1, y1] of r.rects) {
+      const m = mesh(
+        box(x1 - x0, 0.02, y1 - y0),
+        lib.get(FLOOR_FINISH[r.kind]),
+        (x0 + x1) / 2,
+        z + 0.011,
+        (y0 + y1) / 2,
+      )
+      m.castShadow = false
+      m.userData.room = r
+      g.add(m)
+    }
   }
   return g
 }
@@ -302,18 +310,44 @@ function buildStairs(lib: MaterialLibrary): THREE.Group {
   g.name = 'stairs'
   const mat = lib.get('stair')
 
-  const rise = (STAIR.top - STAIR.bottom) / STAIR.steps
-  const runLength = STAIR.y1 - STAIR.y0 - STAIR.approach
-  const going = runLength / STAIR.steps
-  const cx = (STAIR.x0 + STAIR.x1) / 2
+  // Dog-leg: up the east flight to the half-landing at the rear, turn, up the west flight.
+  const rise = (STAIR.top - STAIR.bottom) / (STAIR.risersPerFlight * 2)
+  const goings = STAIR.risersPerFlight - 1
+  const going = (STAIR.flightTo - STAIR.flightFrom) / goings
+  const landingZ = STAIR.bottom + rise * STAIR.risersPerFlight
 
-  // Climbs from the front of the stairwell towards the rear. Each tread is drawn as the solid
-  // block beneath it, so the flight reads from below as well as above.
-  for (let i = 0; i < STAIR.steps; i++) {
-    const y = STAIR.bottom + rise * (i + 1)
-    const z = STAIR.y1 - STAIR.approach - going * (i + 0.5)
-    g.add(mesh(box(STAIR.width, y - STAIR.bottom, going), mat, cx, (STAIR.bottom + y) / 2, z))
+  const flight = (
+    x0: number,
+    x1: number,
+    startZ: number,
+    /** true = climbing towards the rear (−y). */
+    towardsRear: boolean,
+  ) => {
+    for (let i = 0; i < STAIR.risersPerFlight; i++) {
+      const top = startZ + rise * (i + 1)
+      const z = towardsRear
+        ? STAIR.flightTo - going * (i + 0.5)
+        : STAIR.flightFrom + going * (i + 0.5)
+      // Drawn as the solid block under each tread, so the flight reads from below too.
+      g.add(mesh(box(x1 - x0, top - STAIR.bottom, going), mat, (x0 + x1) / 2, (STAIR.bottom + top) / 2, z))
+    }
   }
+
+  flight(STAIR.eastFlight.x0, STAIR.eastFlight.x1, STAIR.bottom, true)
+  flight(STAIR.westFlight.x0, STAIR.westFlight.x1, landingZ, false)
+
+  // Half-landing
+  const lw = STAIR.x1 - STAIR.x0
+  const ld = STAIR.landing.y1 - STAIR.landing.y0
+  g.add(
+    mesh(
+      box(lw, landingZ - STAIR.bottom, ld),
+      mat,
+      (STAIR.x0 + STAIR.x1) / 2,
+      (STAIR.bottom + landingZ) / 2,
+      (STAIR.landing.y0 + STAIR.landing.y1) / 2,
+    ),
+  )
 
   // Exterior entrance: landing at the threshold, guard wall, then steps down to the terrace.
   const es = ENTRANCE_STEPS
@@ -343,6 +377,47 @@ function buildStairs(lib: MaterialLibrary): THREE.Group {
     g.add(mesh(box(exW, top - es.from + 0.3, eGoing), lib.get('terrace'), exCx, (top + es.from - 0.3) / 2, z))
   }
   return g
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fitted furniture and sanitary ware — footprints straight off the plans,
+// heights by convention since the plans do not give them.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const FIXTURE_SURFACE: Record<Fixture['kind'], SurfaceId> = {
+  counter: 'joinery',
+  wardrobe: 'joinery',
+  sink: 'sanitary',
+  hob: 'frame',
+  wc: 'sanitary',
+  basin: 'sanitary',
+  bath: 'sanitary',
+  shower: 'sanitary',
+  appliance: 'frame',
+}
+
+function buildFixtures(lib: MaterialLibrary): { cave: THREE.Group; ground: THREE.Group } {
+  const cave = new THREE.Group()
+  const ground = new THREE.Group()
+  cave.name = 'fixtures-cave'
+  ground.name = 'fixtures-ground'
+
+  for (const f of FIXTURES) {
+    const floor = f.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor
+    const base = floor + (f.base ?? 0)
+    const w = f.x1 - f.x0
+    const d = f.y1 - f.y0
+    const m = mesh(
+      box(w, f.h, d),
+      lib.get(FIXTURE_SURFACE[f.kind]),
+      f.x0 + w / 2,
+      base + f.h / 2,
+      f.y0 + d / 2,
+    )
+    m.userData.fixture = f
+    ;(f.level === 'cave' ? cave : ground).add(m)
+  }
+  return { cave, ground }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -478,50 +553,70 @@ function buildSite(lib: MaterialLibrary): THREE.Group {
 
   // Retaining walls either side of the driveway trench, as drawn on the basement plan.
   const wallMat = lib.get('boundaryWall')
-  for (const x of [DRIVEWAY.x0, DRIVEWAY.x1]) {
+  for (const x of [DRIVEWAY.x0 - DRIVEWAY.wallThickness / 2, DRIVEWAY.x1 + DRIVEWAY.wallThickness / 2]) {
     const steps = 10
     for (let i = 0; i < steps; i++) {
       const ya = DRIVEWAY.yBottom + ((DRIVEWAY.yTop - DRIVEWAY.yBottom) * i) / steps
       const yb = DRIVEWAY.yBottom + ((DRIVEWAY.yTop - DRIVEWAY.yBottom) * (i + 1)) / steps
       const zFloor = Math.min(groundAt(x, ya), groundAt(x, yb))
-      const zTop = groundAt(x + (x === DRIVEWAY.x0 ? -1.8 : 1.8), (ya + yb) / 2)
+      const zTop = groundAt(x + (x < DRIVEWAY.x1 ? -1.8 : 1.8), (ya + yb) / 2)
       const h = Math.max(0.12, zTop - zFloor)
-      g.add(mesh(box(0.2, h, yb - ya), wallMat, x, zFloor + h / 2, (ya + yb) / 2))
+      g.add(mesh(box(DRIVEWAY.wallThickness, h, yb - ya), wallMat, x, zFloor + h / 2, (ya + yb) / 2))
     }
   }
 
-  // Plot boundaries
+  // Plot boundaries. The street side and the left flank are rendered and painted walls; the
+  // rear and the right flank are wire mesh on timber posts. Both follow the ground rather than
+  // sitting at one level, so the wall is built as a ribbon of quads rather than stepped boxes.
   for (let i = 0; i < PLOT.length; i++) {
     const [x0, y0] = PLOT[i]
     const [x1, y1] = PLOT[(i + 1) % PLOT.length]
     const len = Math.hypot(x1 - x0, y1 - y0)
+    const steps = Math.max(2, Math.round(len / 1.2))
     const walled = BOUNDARY.walledEdges.includes(i)
-    // Follow the ground rather than sitting at one level along the whole run.
-    const spans = Math.max(1, Math.round(len / 3))
-    for (let k = 0; k < spans; k++) {
-      const ta = k / spans
-      const tb = (k + 1) / spans
-      const ax = x0 + (x1 - x0) * ta
-      const ay = y0 + (y1 - y0) * ta
-      const bx = x0 + (x1 - x0) * tb
-      const by = y0 + (y1 - y0) * tb
-      const cx = (ax + bx) / 2
-      const cy = (ay + by) / 2
-      const zc = groundAt(cx, cy)
-      const spanLen = Math.hypot(bx - ax, by - ay)
-      if (walled) {
-        const w = mesh(
-          box(BOUNDARY.wall.thickness, BOUNDARY.wall.height, spanLen + 0.05),
-          wallMat,
-          cx,
-          zc + BOUNDARY.wall.height / 2,
-          cy,
+    const height = walled ? BOUNDARY.wall.height : BOUNDARY.fence.height
+
+    if (walled) {
+      // Normal to the run, for giving the ribbon its thickness.
+      const nx = (-(y1 - y0) / len) * (BOUNDARY.wall.thickness / 2)
+      const ny = ((x1 - x0) / len) * (BOUNDARY.wall.thickness / 2)
+      const verts: number[] = []
+      const quad = (a: number[], b: number[], c: number[], d: number[]) => {
+        verts.push(...a, ...b, ...c, ...a, ...c, ...d)
+      }
+      for (let k = 0; k < steps; k++) {
+        const ta = k / steps
+        const tb = (k + 1) / steps
+        const ax = x0 + (x1 - x0) * ta
+        const ay = y0 + (y1 - y0) * ta
+        const bx = x0 + (x1 - x0) * tb
+        const by = y0 + (y1 - y0) * tb
+        const az = groundAt(ax, ay) - 0.15
+        const bz = groundAt(bx, by) - 0.15
+        // Two faces and a cap.
+        quad([ax + nx, az, ay + ny], [bx + nx, bz, by + ny], [bx + nx, bz + height, by + ny], [ax + nx, az + height, ay + ny])
+        quad([bx - nx, bz, by - ny], [ax - nx, az, ay - ny], [ax - nx, az + height, ay - ny], [bx - nx, bz + height, by - ny])
+        quad(
+          [ax + nx, az + height, ay + ny],
+          [bx + nx, bz + height, by + ny],
+          [bx - nx, bz + height, by - ny],
+          [ax - nx, az + height, ay - ny],
         )
-        w.rotation.y = Math.atan2(x1 - x0, y1 - y0)
-        g.add(w)
-      } else {
-        // Wire fence on timber posts.
-        g.add(mesh(box(0.1, BOUNDARY.fence.height, 0.1), wallMat, ax, zc + BOUNDARY.fence.height / 2, ay))
+      }
+      const geo = new THREE.BufferGeometry()
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3))
+      geo.computeVertexNormals()
+      const m = new THREE.Mesh(geo, wallMat)
+      m.castShadow = true
+      m.receiveShadow = true
+      g.add(m)
+    } else {
+      const posts = Math.max(2, Math.round(len / BOUNDARY.fence.postSpacing))
+      for (let k = 0; k <= posts; k++) {
+        const t = k / posts
+        const px = x0 + (x1 - x0) * t
+        const py = y0 + (y1 - y0) * t
+        g.add(mesh(box(0.1, height, 0.1), wallMat, px, groundAt(px, py) + height / 2, py))
       }
     }
   }
@@ -537,7 +632,6 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   const cave = new THREE.Group()
   const ground = new THREE.Group()
   const glazing = new THREE.Group()
-  const furniture = new THREE.Group()
   cave.name = 'cave'
   ground.name = 'ground'
   glazing.name = 'glazing'
@@ -560,13 +654,18 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   cave.add(buildRoomFloors('cave', lib))
   ground.add(buildRoomFloors('ground', lib))
 
+  // Fixtures live inside their own level's group so they hide with it.
+  const fixtures = buildFixtures(lib)
+  cave.add(fixtures.cave)
+  ground.add(fixtures.ground)
+
   const slabs = buildSlabs(lib)
   cave.add(slabs.raft)
   const roof = buildRoof(lib)
   const stairs = buildStairs(lib)
   const site = buildSite(lib)
 
-  root.add(cave, ground, slabs.overCave, slabs.overGround, roof, glazing, stairs, site, furniture)
+  root.add(cave, ground, slabs.overCave, slabs.overGround, roof, glazing, stairs, site)
   root.name = 'house'
 
   return {
@@ -579,7 +678,6 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
     glazing,
     site,
     stairs,
-    furniture,
   }
 }
 

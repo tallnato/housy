@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import './styles.css'
-import { LEVELS, ROOMS, SCHEDULE, SIZE, type Level } from './model/house'
+import { LEVELS, ROOMS, SCHEDULE, SIZE, roomCentre, type Level } from './model/house'
 import { SCHEMES, schemeById, AS_SPECIFIED } from './model/finishes'
 import { MaterialLibrary } from './scene/materials'
 import { buildHouse } from './scene/builder'
@@ -77,13 +77,15 @@ $<HTMLInputElement>('#site-on').addEventListener('change', (e) => {
 
 const centre = new THREE.Vector3(SIZE.width / 2, LEVELS.groundFloor + 0.8, SIZE.depth / 2)
 
+// Elevation viewpoints sit high enough to clear the boundary walls, which otherwise stand
+// between the camera and the façade.
 const VIEWS: Record<string, [THREE.Vector3, THREE.Vector3]> = {
   axo: [new THREE.Vector3(-17, 15, 31), centre],
-  principal: [new THREE.Vector3(SIZE.width / 2, 6, SIZE.depth + 30), centre],
-  posterior: [new THREE.Vector3(SIZE.width / 2, 6, -28), centre],
-  esquerdo: [new THREE.Vector3(-28, 6, SIZE.depth / 2), centre],
-  direito: [new THREE.Vector3(SIZE.width + 28, 6, SIZE.depth / 2), centre],
-  topo: [new THREE.Vector3(SIZE.width / 2, 42, SIZE.depth / 2 + 0.01), centre],
+  principal: [new THREE.Vector3(SIZE.width / 2, 11, SIZE.depth + 32), centre],
+  posterior: [new THREE.Vector3(SIZE.width / 2, 11, -30), centre],
+  esquerdo: [new THREE.Vector3(-31, 11, SIZE.depth / 2), centre],
+  direito: [new THREE.Vector3(SIZE.width + 31, 11, SIZE.depth / 2), centre],
+  topo: [new THREE.Vector3(SIZE.width / 2, 48, SIZE.depth / 2 + 0.02), centre],
 }
 
 $('#views').addEventListener('click', (e) => {
@@ -199,7 +201,8 @@ ROOMS.filter((r) => r.area).forEach((r, i) => {
   li.innerHTML = `<span>${r.name} <span class="lvl">${r.level === 'cave' ? 'cave' : 'r/c'}</span></span><span class="area">${r.area}</span>`
   li.addEventListener('click', () => {
     const y = (r.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor) + 1.4
-    const t = new THREE.Vector3((r.x0 + r.x1) / 2, y, (r.y0 + r.y1) / 2)
+    const [cx, cy] = roomCentre(r)
+    const t = new THREE.Vector3(cx, y, cy)
     viewer.flyTo(t.clone().add(new THREE.Vector3(-9, 11, 12)), t)
     floorMode = r.level
     for (const b of $('#floors').querySelectorAll('button')) b.classList.toggle('on', b.dataset.floor === r.level)
@@ -221,14 +224,11 @@ const labels = ROOMS.filter((r) => r.area).map((r) => {
   el.className = 'room-label'
   el.innerHTML = `<b>${r.name}</b><i>${r.area}</i>`
   labelLayer.append(el)
+  const [cx, cy] = roomCentre(r)
   return {
     el,
     room: r,
-    pos: new THREE.Vector3(
-      (r.x0 + r.x1) / 2,
-      (r.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor) + 1.2,
-      (r.y0 + r.y1) / 2,
-    ),
+    pos: new THREE.Vector3(cx, (r.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor) + 1.2, cy),
   }
 })
 
@@ -274,6 +274,19 @@ $('#panel-toggle').addEventListener('click', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Apply whatever the URL asked for
 // ─────────────────────────────────────────────────────────────────────────────
+
+// `?ui=0` strips the chrome and `?labels=0` the room names — handy for embedding the viewer
+// or grabbing a clean still.
+if (params.get('ui') === '0') {
+  for (const sel of ['.topbar', '.panel', '.hud']) {
+    const el = document.querySelector<HTMLElement>(sel)
+    if (el) el.hidden = true
+  }
+}
+if (params.get('labels') === '0') {
+  labelsOn = false
+  $<HTMLInputElement>('#labels-on').checked = false
+}
 
 const wantedSun = params.get('sun')?.split(',')
 if (wantedSun?.length === 2) {

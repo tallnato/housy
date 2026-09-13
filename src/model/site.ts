@@ -101,10 +101,13 @@ const PADS: Pad[] = [
  * so it is modelled as drawn rather than smoothed out.
  */
 export const DRIVEWAY = {
-  x0: 8.1,
-  x1: 13.3,
+  /** Clear deck between the retaining walls — 5.006 m, as the basement plan dimensions it. */
+  x0: 8.199,
+  x1: 13.205,
+  /** Retaining walls stand outside that, 0.20 m thick. */
+  wallThickness: 0.2,
   /** Ramp head, at the apron level. */
-  yTop: 14.6,
+  yTop: 14.654,
   zTop: -0.07,
   /** Bottom, level with the garage floor, just outside the door. */
   yBottom: 10.501,
@@ -136,7 +139,7 @@ export const ENTRANCE_STEPS = {
  * flank, and wire fencing on timber posts to the rear and the right flank.
  */
 export const BOUNDARY = {
-  wall: { height: 1.6, thickness: 0.2 },
+  wall: { height: 1.25, thickness: 0.2 },
   fence: { height: 1.5, postSpacing: 2.4 },
   /** Indices into PLOT: the edge running from vertex i to vertex i+1. */
   walledEdges: [5, 0],
