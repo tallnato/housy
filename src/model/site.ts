@@ -141,9 +141,8 @@ export const ENTRANCE_STEPS = {
 export const BOUNDARY = {
   wall: { height: 1.25, thickness: 0.2 },
   fence: { height: 1.5, postSpacing: 2.4 },
-  /** Indices into PLOT: the edge running from vertex i to vertex i+1. */
+  /** Indices into PLOT: the edge running from vertex i to vertex i+1. Everything else fences. */
   walledEdges: [5, 0],
-  fencedEdges: [1, 2, 3, 4],
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

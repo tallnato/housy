@@ -697,6 +697,3 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
     stairs,
   }
 }
-
-/** Where the model sits, for framing the camera. */
-export const HOUSE_CENTRE = new THREE.Vector3(SIZE.width / 2, LEVELS.groundFloor, SIZE.depth / 2)

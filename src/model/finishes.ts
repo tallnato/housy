@@ -60,7 +60,7 @@ export interface Scheme {
 export const AS_SPECIFIED: Scheme = {
   id: 'as-specified',
   name: 'Como projectado',
-  note: 'The finishes written on the drawings: grey render, white band, grey aluminium frames.',
+  note: 'Os acabamentos escritos nas peças: monomassa cinza, pala branca, caixilharia cinza.',
   surfaces: {
     exteriorWall: { color: '#9a9a97', roughness: 0.92, metalness: 0, grain: 'render' },
     pala: { color: '#f2f1ed', roughness: 0.85, metalness: 0, grain: 'render' },
@@ -87,7 +87,7 @@ export const AS_SPECIFIED: Scheme = {
 export const WARM_MINIMAL: Scheme = {
   id: 'warm-minimal',
   name: 'Branco quente',
-  note: 'Off-white render, oak frames, pale stone terraces.',
+  note: 'Monomassa quase branca, caixilharia em carvalho, pavimentos exteriores claros.',
   surfaces: {
     ...AS_SPECIFIED.surfaces,
     exteriorWall: { color: '#ece7dd', roughness: 0.9, metalness: 0, grain: 'render' },
@@ -105,7 +105,7 @@ export const WARM_MINIMAL: Scheme = {
 export const DARK_CONTRAST: Scheme = {
   id: 'dark-contrast',
   name: 'Cinza escuro',
-  note: 'Charcoal render against a white band — the contrast the massing is drawn for.',
+  note: 'Cinza escuro contra a pala branca — o contraste para que a volumetria foi desenhada.',
   surfaces: {
     ...AS_SPECIFIED.surfaces,
     exteriorWall: { color: '#4a4c4f', roughness: 0.88, metalness: 0, grain: 'render' },
@@ -122,7 +122,7 @@ export const DARK_CONTRAST: Scheme = {
 export const WHITE_MODEL: Scheme = {
   id: 'white-model',
   name: 'Maqueta',
-  note: 'Everything in plaster white, so you read the shape and nothing else.',
+  note: 'Tudo em branco, para se ler apenas a forma.',
   surfaces: Object.fromEntries(
     (Object.keys(AS_SPECIFIED.surfaces) as SurfaceId[]).map((k) => [
       k,

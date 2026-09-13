@@ -440,6 +440,44 @@ dialog ul {
   margin: 10px 0;
 }
 
+dialog h3 {
+  margin: 18px 0 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.levels {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  columns: 2;
+  column-gap: 20px;
+  font-size: 11.5px;
+}
+
+.levels li {
+  display: flex;
+  gap: 8px;
+  break-inside: avoid;
+  padding: 1px 0;
+  line-height: 1.5;
+}
+
+.levels b {
+  flex: 0 0 46px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.levels span {
+  color: var(--muted);
+}
+
 dialog button {
   margin-top: 14px;
   padding: 8px 16px;

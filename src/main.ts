@@ -1,9 +1,10 @@
 import * as THREE from 'three'
 import './styles.css'
-import { LEVELS, ROOMS, SCHEDULE, SIZE, roomCentre, type Level } from './model/house'
+import { LEVELS, ROOMS, SCHEDULE, SIZE, roomArea, roomCentre, type Level } from './model/house'
 import { SCHEMES, schemeById, AS_SPECIFIED } from './model/finishes'
 import { MaterialLibrary } from './scene/materials'
 import { buildHouse } from './scene/builder'
+import { SPOT_LEVELS } from './model/site'
 import { Viewer } from './scene/viewer'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
@@ -206,6 +207,8 @@ ROOMS.filter((r) => r.area).forEach((r, i) => {
   const li = document.createElement('li')
   li.dataset.idx = String(i)
   li.innerHTML = `<span>${r.name} <span class="lvl">${r.level === 'cave' ? 'cave' : 'r/c'}</span></span><span class="area">${r.area}</span>`
+  // The printed figure against what the modelled rectangles actually measure.
+  li.title = `desenho ${r.area} · modelo ${roomArea(r).toFixed(1).replace('.', ',')} m²`
   li.addEventListener('click', () => {
     const y = (r.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor) + 1.4
     const [cx, cy] = roomCentre(r)
@@ -270,6 +273,15 @@ viewer.onTick(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Chrome
 // ─────────────────────────────────────────────────────────────────────────────
+
+// The spot levels the ground surface was reconstructed from, listed as the evidence.
+const levelsEl = $('#levels')
+for (const l of SPOT_LEVELS) {
+  const li = document.createElement('li')
+  const v = (l.z >= 0 ? '+' : '−') + Math.abs(l.z).toFixed(2).replace('.', ',')
+  li.innerHTML = `<b>${v}</b><span>${l.note}</span>`
+  levelsEl.append(li)
+}
 
 const help = $<HTMLDialogElement>('#help')
 $('#help-toggle').addEventListener('click', () => help.showModal())
