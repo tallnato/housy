@@ -129,6 +129,7 @@ function setWalk(on: boolean) {
     for (const b of $('#floors').querySelectorAll('button')) b.classList.toggle('on', b.dataset.floor === 'all')
     $<HTMLInputElement>('#roof-on').checked = true
     applyVisibility()
+    writeUrl()
   }
 }
 
@@ -307,10 +308,10 @@ if (params.get('labels') === '0') {
   $<HTMLInputElement>('#labels-on').checked = false
 }
 
-const wantedSun = params.get('sun')?.split(',')
-if (wantedSun?.length === 2) {
-  az.value = wantedSun[0]
-  el.value = wantedSun[1]
+const wantedSun = params.get('sun')?.split(',').map(Number)
+if (wantedSun?.length === 2 && wantedSun.every(Number.isFinite)) {
+  az.value = String(wantedSun[0])
+  el.value = String(wantedSun[1])
   updateSun()
 }
 

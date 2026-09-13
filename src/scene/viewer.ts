@@ -136,6 +136,12 @@ export class Viewer {
       this.canvas.requestPointerLock?.()
     } else {
       document.exitPointerLock?.()
+      // Leaving walk mode with a stale orbit target would spin the camera round a point
+      // somewhere behind it. Re-anchor on whatever the walker was facing.
+      const dir = new THREE.Vector3()
+      this.camera.getWorldDirection(dir)
+      this.controls.target.copy(this.camera.position).addScaledVector(dir, 6)
+      this.controls.update()
     }
   }
 
