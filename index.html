@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Casa · 3D</title>
+    <meta name="description" content="Interactive 3D model of a two-storey house, built from its architectural drawings." />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <div id="boot">a construir o modelo…</div>
+    <canvas id="view"></canvas>
+
+    <header class="topbar">
+      <div class="title">
+        <strong>Casa</strong>
+        <span>moradia unifamiliar · 147 m² de implantação</span>
+      </div>
+      <button id="help-toggle" class="ghost" type="button" aria-label="Ajuda">?</button>
+      <button id="panel-toggle" class="ghost only-narrow" type="button" aria-label="Painel">☰</button>
+    </header>
+
+    <aside class="panel" id="panel">
+      <section>
+        <h2>Pisos</h2>
+        <div class="seg" id="floors" role="group">
+          <button data-floor="all" class="on" type="button">Tudo</button>
+          <button data-floor="cave" type="button">Cave</button>
+          <button data-floor="ground" type="button">R/C</button>
+        </div>
+        <label class="check"><input type="checkbox" id="roof-on" checked /> <span>Cobertura</span></label>
+        <label class="check"><input type="checkbox" id="site-on" checked /> <span>Terreno e muros</span></label>
+        <label class="check"><input type="checkbox" id="labels-on" checked /> <span>Nomes dos espaços</span></label>
+      </section>
+
+      <section>
+        <h2>Vista</h2>
+        <div class="grid-views" id="views">
+          <button data-view="axo" type="button">Axonometria</button>
+          <button data-view="principal" type="button">Alç. principal</button>
+          <button data-view="posterior" type="button">Alç. posterior</button>
+          <button data-view="esquerdo" type="button">Lat. esquerdo</button>
+          <button data-view="direito" type="button">Lat. direito</button>
+          <button data-view="topo" type="button">Planta</button>
+        </div>
+        <button id="walk" class="wide" type="button">Entrar na casa (modo a pé)</button>
+      </section>
+
+      <section>
+        <h2>Sol</h2>
+        <label class="slider">
+          <span>Orientação<em id="az-val">325°</em></span>
+          <input type="range" id="sun-az" min="0" max="360" value="325" />
+        </label>
+        <label class="slider">
+          <span>Altura<em id="el-val">42°</em></span>
+          <input type="range" id="sun-el" min="3" max="85" value="42" />
+        </label>
+        <p class="note">As peças desenhadas não indicam o norte, por isso a orientação é livre.</p>
+      </section>
+
+      <section>
+        <h2>Acabamentos</h2>
+        <div id="schemes" class="schemes"></div>
+        <p class="note" id="scheme-note"></p>
+      </section>
+
+      <section>
+        <h2>Áreas</h2>
+        <dl id="schedule" class="schedule"></dl>
+      </section>
+
+      <section>
+        <h2>Compartimentos</h2>
+        <ul id="rooms" class="rooms"></ul>
+      </section>
+    </aside>
+
+    <div class="hud" id="hud" hidden>
+      <strong>Modo a pé</strong>
+      <span>WASD para andar · rato para olhar · Shift para correr · Esc para sair</span>
+    </div>
+
+    <dialog id="help">
+      <h2>Sobre este modelo</h2>
+      <p>
+        Modelo tridimensional gerado a partir das peças desenhadas do projecto de arquitectura
+        (plantas, cortes e alçados à escala 1:100). Todas as dimensões foram lidas da geometria
+        vectorial dos desenhos, não estimadas.
+      </p>
+      <ul>
+        <li>Implantação 14,005 × 10,501 m · pé-direito livre 2,60 m em ambos os pisos</li>
+        <li>Cave à cota −1,61 · rés-do-chão à cota +1,54 · platibanda à cota +4,99</li>
+        <li>Paredes exteriores 0,35 m · divisórias 0,10 m</li>
+      </ul>
+      <p class="note">
+        O modelo não contém qualquer informação de localização: sem morada, sem arruamentos e sem
+        coordenadas. O contorno do lote está representado apenas em coordenadas relativas à casa.
+      </p>
+      <form method="dialog"><button type="submit">Fechar</button></form>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
