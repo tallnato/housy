@@ -16,6 +16,7 @@ and published as a static site.
 ## What it does
 
 - **Walk around it.** Orbit the model, or drop into a first-person walkthrough and go inside.
+  The walker raycasts the real geometry, so the stairs work as stairs and the walls stop you.
 - **Peel it apart.** Show the basement, the ground floor, or both; hide the roof; hide the site.
 - **Move the sun.** Azimuth and altitude sliders, with real shadows.
 - **Try finishes.** Switch the whole house between material schemes — the seam that the
@@ -26,6 +27,10 @@ and published as a static site.
 Pick a floor and the roof and everything above it peels away:
 
 ![Ground floor with the roof off](docs/plan.png)
+
+…or walk in. The living room's rear wall is a 4.15 m sliding screen running floor to lintel:
+
+![Inside the living room](docs/interior.png)
 
 ## The model is data, not a mesh
 
@@ -93,6 +98,7 @@ The viewer keeps its state in the URL, so any view is a link you can send someon
 | `sun` | `azimuth,altitude` in degrees | e.g. `330,38` |
 | `ui` | `0` | hide the chrome, for embedding |
 | `labels` | `0` | hide the room names |
+| `cam` / `at` | `x,y,z` | place the camera and its target exactly |
 
 ```
 https://tallnato.github.io/myhouse/?view=topo&floor=cave&roof=0

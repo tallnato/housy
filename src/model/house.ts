@@ -164,6 +164,8 @@ const caveDoor = (from: number, to: number, label?: string): Opening => ({
 
 export const GROUND_WALLS: Wall[] = [
   // ── Exterior shell ────────────────────────────────────────────────────────
+  // The rear and front walls run the full width; the flanks stop at their inner faces, so the
+  // four walls tile the shell rather than overlapping (and fighting) in the corners.
   {
     id: 'g-rear',
     level: 'ground',
@@ -202,8 +204,8 @@ export const GROUND_WALLS: Wall[] = [
     level: 'ground',
     run: 'y',
     at: 0.175,
-    from: 0,
-    to: SIZE.depth,
+    from: SIZE.wallExt,
+    to: SIZE.depth - SIZE.wallExt,
     thickness: SIZE.wallExt,
     exterior: true,
     openings: [window_(4.751, 6.751, 'Sala'), window_(7.951, 9.451, 'Cozinha')],
@@ -213,8 +215,8 @@ export const GROUND_WALLS: Wall[] = [
     level: 'ground',
     run: 'y',
     at: SIZE.width - 0.175,
-    from: 0,
-    to: SIZE.depth,
+    from: SIZE.wallExt,
+    to: SIZE.depth - SIZE.wallExt,
     thickness: SIZE.wallExt,
     exterior: true,
     openings: [window_(3.95, 4.7, 'I.s.')],
@@ -331,8 +333,8 @@ export const CAVE_WALLS: Wall[] = [
     level: 'cave',
     run: 'y',
     at: 0.175,
-    from: 0,
-    to: SIZE.depth,
+    from: SIZE.wallExt,
+    to: SIZE.depth - SIZE.wallExt,
     thickness: SIZE.wallExt,
     exterior: true,
     // The two left-hand windows share a head but not a sill: the elevation draws the wider
@@ -347,8 +349,8 @@ export const CAVE_WALLS: Wall[] = [
     level: 'cave',
     run: 'y',
     at: SIZE.width - 0.175,
-    from: 0,
-    to: SIZE.depth,
+    from: SIZE.wallExt,
+    to: SIZE.depth - SIZE.wallExt,
     thickness: SIZE.wallExt,
     exterior: true,
   },

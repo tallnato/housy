@@ -50,7 +50,7 @@ const box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d)
 
 function mesh(
   geo: THREE.BufferGeometry,
-  mat: THREE.Material,
+  mat: THREE.Material | THREE.Material[],
   x: number,
   y: number,
   z: number,
@@ -74,7 +74,7 @@ function slab(
   thickness: number,
   base: number,
   top: number,
-  mat: THREE.Material,
+  mat: THREE.Material | THREE.Material[],
 ): THREE.Mesh | null {
   const len = to - from
   const h = top - base
@@ -89,6 +89,20 @@ function slab(
 // Walls
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Which BoxGeometry face points away from the building, for this exterior wall. */
+function outwardFaceIndex(wall: Wall): number {
+  if (wall.run === 'x') return wall.at < SIZE.depth / 2 ? 5 : 4 // −z is the rear
+  return wall.at < SIZE.width / 2 ? 1 : 0 // −x is the left flank
+}
+
+function exteriorWallMaterials(wall: Wall, lib: MaterialLibrary): THREE.Material[] {
+  const inside = lib.get('interiorWall')
+  const outside = lib.get('exteriorWall')
+  const mats: THREE.Material[] = [inside, inside, inside, inside, inside, inside]
+  mats[outwardFaceIndex(wall)] = outside
+  return mats
+}
+
 function buildWall(wall: Wall, lib: MaterialLibrary): THREE.Group {
   const group = new THREE.Group()
   group.name = wall.id
@@ -99,7 +113,10 @@ function buildWall(wall: Wall, lib: MaterialLibrary): THREE.Group {
   // Exterior walls run up behind the slab to the underside of the level above.
   const top = wall.top ?? (wall.exterior ? (wall.level === 'cave' ? LEVELS.groundFloor : LEVELS.roofSoffit) : ceil)
 
-  const mat = lib.get(wall.exterior ? 'exteriorWall' : 'interiorWall')
+  // An exterior wall is rendered outside and plastered inside, so it needs two materials.
+  // BoxGeometry groups run [+x, −x, +y, −y, +z, −z]; only the face pointing out of the
+  // building gets the render, and the reveals read as painted plaster, which is how they are.
+  const mat = wall.exterior ? exteriorWallMaterials(wall, lib) : lib.get('interiorWall')
   const openings = [...(wall.openings ?? [])].sort((a, b) => a.from - b.from)
 
   let cursor = wall.from

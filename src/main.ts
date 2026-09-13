@@ -107,6 +107,13 @@ function lookDownOn(level: Level) {
 // Walk mode
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Floors, slabs, stairs and the ground are what you stand on; walls and glazing are what you
+// bump into. Both are raycast against the real geometry, so nothing is described twice.
+viewer.setWalkGeometry(
+  [parts.cave, parts.ground, parts.slabOverCave, parts.stairs, parts.site],
+  [parts.cave, parts.ground, parts.glazing],
+)
+
 const walkBtn = $<HTMLButtonElement>('#walk')
 const hud = $('#hud')
 
@@ -313,13 +320,24 @@ if (params.get('roof') === '0') {
 
 applyVisibility()
 
+// `?cam=x,y,z&at=x,y,z` places the camera exactly, for linking to a specific view.
+const camParam = params.get('cam')?.split(',').map(Number)
+const atParam = params.get('at')?.split(',').map(Number)
+if (camParam?.length === 3 && camParam.every(Number.isFinite)) {
+  viewer.camera.position.set(camParam[0], camParam[1], camParam[2])
+  if (atParam?.length === 3 && atParam.every(Number.isFinite)) {
+    viewer.controls.target.set(atParam[0], atParam[1], atParam[2])
+  }
+  viewer.controls.update()
+}
+
 const wantedView = params.get('view')
-if (wantedView && VIEWS[wantedView]) {
+if (!camParam && wantedView && VIEWS[wantedView]) {
   const [pos, target] = VIEWS[wantedView]
   viewer.camera.position.copy(pos)
   viewer.controls.target.copy(target)
   viewer.controls.update()
-} else if (wantedFloor === 'cave' || wantedFloor === 'ground') {
+} else if (!camParam && (wantedFloor === 'cave' || wantedFloor === 'ground')) {
   lookDownOn(wantedFloor)
 }
 

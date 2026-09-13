@@ -27,6 +27,11 @@ export class Viewer {
   private lastFrame = performance.now()
   private readonly onFrame: Array<(dt: number) => void> = []
 
+  /** What the walk camera stands on and bumps into. */
+  private walkables: THREE.Object3D[] = []
+  private obstacles: THREE.Object3D[] = []
+  private readonly ray = new THREE.Raycaster()
+
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' })
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
@@ -108,12 +113,26 @@ export class Viewer {
     this.mode = mode
     this.controls.enabled = mode === 'orbit'
     if (mode === 'walk') {
-      this.walkPos.copy(this.camera.position)
-      this.walkPos.y = this.eyeHeightAt(this.walkPos.x, this.walkPos.z)
-      const dir = new THREE.Vector3()
-      this.camera.getWorldDirection(dir)
-      this.walkYaw = Math.atan2(-dir.x, -dir.z)
-      this.walkPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1))
+      const near =
+        this.camera.position.x > -8 &&
+        this.camera.position.x < SIZE.width + 8 &&
+        this.camera.position.z > -8 &&
+        this.camera.position.z < SIZE.depth + 10 &&
+        this.camera.position.y < 6
+
+      if (near) {
+        this.walkPos.copy(this.camera.position)
+        const dir = new THREE.Vector3()
+        this.camera.getWorldDirection(dir)
+        this.walkYaw = Math.atan2(-dir.x, -dir.z)
+        this.walkPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1))
+      } else {
+        // Coming in from an orbit view: start on the path in front of the entrance, facing it.
+        this.walkPos.set(5.5, 0, SIZE.depth + 4.5)
+        this.walkYaw = Math.PI
+        this.walkPitch = -0.05
+      }
+      this.walkPos.y = this.eyeHeightAt(this.walkPos.x, this.walkPos.z, this.walkPos.y + 2)
       this.canvas.requestPointerLock?.()
     } else {
       document.exitPointerLock?.()
@@ -129,16 +148,44 @@ export class Viewer {
   }
 
   /**
-   * Eye height for the walk camera. Inside the footprint you stand on whichever floor slab is
-   * below you; outside it you stand on the ground.
+   * Tell the walk camera what to stand on and what to bump into. Everything is found by
+   * raycasting the real geometry, so the stairs work as stairs and the terraces as terraces
+   * without any of it being described twice.
    */
-  private eyeHeightAt(x: number, z: number): number {
+  setWalkGeometry(walkables: THREE.Object3D[], obstacles: THREE.Object3D[]) {
+    this.walkables = walkables
+    this.obstacles = obstacles
+  }
+
+  private static readonly EYE = 1.68
+  private static readonly DOWN = new THREE.Vector3(0, -1, 0)
+
+  /**
+   * Eye height for the walk camera: cast down from a little above the head and stand on the
+   * first surface found. Falls back to the terrain when nothing is hit.
+   */
+  private eyeHeightAt(x: number, z: number, fromY: number): number {
+    const eye = Viewer.EYE
+    if (this.walkables.length) {
+      this.ray.set(new THREE.Vector3(x, fromY + 0.9, z), Viewer.DOWN)
+      this.ray.far = 6
+      const hit = this.ray.intersectObjects(this.walkables, true)[0]
+      if (hit) return hit.point.y + eye
+    }
     const inside = x > -0.2 && x < SIZE.width + 0.2 && z > -0.2 && z < SIZE.depth + 0.2
-    const eye = 1.68
     if (!inside) return groundAt(x, z) + eye
-    const current = this.walkPos.y - eye
-    // Snap to whichever slab we are nearest to, so stairs feel like stairs.
+    const current = fromY - eye
     return (current > LEVELS.groundFloor - 1.2 ? LEVELS.groundFloor : LEVELS.caveFloor) + eye
+  }
+
+  /** True if a step of `delta` from the current position would walk into something. */
+  private blocked(delta: THREE.Vector3): boolean {
+    if (!this.obstacles.length) return false
+    const dir = delta.clone().normalize()
+    // Chest height — low enough to catch balustrades, high enough to clear a tread.
+    this.ray.set(new THREE.Vector3(this.walkPos.x, this.walkPos.y - 0.5, this.walkPos.z), dir)
+    this.ray.far = delta.length() + 0.3
+    return this.ray.intersectObjects(this.obstacles, true).length > 0
   }
 
   private bindInput() {
@@ -171,10 +218,21 @@ export class Viewer {
     if (this.keys.has('KeyS') || this.keys.has('ArrowDown')) move.sub(forward)
     if (this.keys.has('KeyD') || this.keys.has('ArrowRight')) move.add(right)
     if (this.keys.has('KeyA') || this.keys.has('ArrowLeft')) move.sub(right)
-    if (move.lengthSq() > 0) this.walkPos.addScaledVector(move.normalize(), speed)
+    if (move.lengthSq() > 0) {
+      const step = move.normalize().multiplyScalar(speed)
+      // Slide along whatever is in the way rather than sticking to it.
+      if (!this.blocked(step)) {
+        this.walkPos.add(step)
+      } else {
+        const alongX = new THREE.Vector3(step.x, 0, 0)
+        const alongZ = new THREE.Vector3(0, 0, step.z)
+        if (alongX.lengthSq() > 1e-8 && !this.blocked(alongX)) this.walkPos.add(alongX)
+        else if (alongZ.lengthSq() > 1e-8 && !this.blocked(alongZ)) this.walkPos.add(alongZ)
+      }
+    }
 
-    const targetY = this.eyeHeightAt(this.walkPos.x, this.walkPos.z)
-    this.walkPos.y += (targetY - this.walkPos.y) * Math.min(1, dt * 9)
+    const targetY = this.eyeHeightAt(this.walkPos.x, this.walkPos.z, this.walkPos.y)
+    this.walkPos.y += (targetY - this.walkPos.y) * Math.min(1, dt * 12)
 
     this.camera.position.copy(this.walkPos)
     const dir = new THREE.Vector3(
