@@ -118,6 +118,37 @@ export const DARK_CONTRAST: Scheme = {
   },
 }
 
+/**
+ * The look in the reference renders: warm cream render under a dark fascia, anthracite
+ * frames, timber slats and pale oak floors, with the cabinetry taken down to charcoal.
+ */
+export const DESIGN_IDEAS: Scheme = {
+  id: 'design-ideas',
+  name: 'Design ideas',
+  note: 'Cream render, anthracite band and frames, timber slats, pale oak and charcoal inside.',
+  surfaces: {
+    ...AS_SPECIFIED.surfaces,
+    exteriorWall: { color: '#e5dbc8', roughness: 0.9, metalness: 0, grain: 'render' },
+    // The renders invert the drawings: the projecting band is the dark element, not the light one.
+    pala: { color: '#313438', roughness: 0.6, metalness: 0.1 },
+    parapet: { color: '#313438', roughness: 0.6, metalness: 0.1 },
+    frame: { color: '#26292c', roughness: 0.38, metalness: 0.55 },
+    glass: { color: '#7f96a6', roughness: 0.05, metalness: 0.12, opacity: 0.3 },
+    roof: { color: '#a9a396', roughness: 1, metalness: 0, grain: 'gravel' },
+    interiorWall: { color: '#f2efe9', roughness: 0.95, metalness: 0 },
+    ceiling: { color: '#fbfaf7', roughness: 0.98, metalness: 0 },
+    floorLiving: { color: '#d3b489', roughness: 0.55, metalness: 0, grain: 'wood' },
+    floorWet: { color: '#c9ad86', roughness: 0.5, metalness: 0, grain: 'wood' },
+    floorGarage: { color: '#b6b4af', roughness: 0.7, metalness: 0.02, grain: 'concrete' },
+    stair: { color: '#e0dbd2', roughness: 0.7, metalness: 0 },
+    joinery: { color: '#2e3134', roughness: 0.5, metalness: 0.06 },
+    terrace: { color: '#cfc7b8', roughness: 0.85, metalness: 0, grain: 'concrete' },
+    driveway: { color: '#a8a49c', roughness: 0.92, metalness: 0, grain: 'concrete' },
+    boundaryWall: { color: '#efe8db', roughness: 0.93, metalness: 0, grain: 'render' },
+    ground: { color: '#6f9247', roughness: 1, metalness: 0, grain: 'grass' },
+  },
+}
+
 /** A study model: no colour, just form. Useful for reading the massing. */
 export const WHITE_MODEL: Scheme = {
   id: 'white-model',
@@ -135,7 +166,7 @@ export const WHITE_MODEL: Scheme = {
   ) as Record<SurfaceId, Finish>,
 }
 
-export const SCHEMES: Scheme[] = [AS_SPECIFIED, WARM_MINIMAL, DARK_CONTRAST, WHITE_MODEL]
+export const SCHEMES: Scheme[] = [AS_SPECIFIED, DESIGN_IDEAS, WARM_MINIMAL, DARK_CONTRAST, WHITE_MODEL]
 
 export function schemeById(id: string): Scheme {
   return SCHEMES.find((s) => s.id === id) ?? AS_SPECIFIED

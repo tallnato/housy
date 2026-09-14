@@ -19,8 +19,11 @@ and published as a static site.
   The walker raycasts the real geometry, so the stairs work as stairs and the walls stop you.
 - **Peel it apart.** Show the basement, the ground floor, or both; hide the roof; hide the site.
 - **Move the sun.** Azimuth and altitude sliders, with real shadows.
-- **Try finishes.** Switch the whole house between material schemes — the seam that the
-  inspiration-image feature plugs into later.
+- **Try finishes.** Switch the whole house between material schemes.
+- **See the design ideas.** A second layer, from the owner's reference renders rather than
+  from the drawings: furniture, timber slat cladding, an eaves cove light, glass Juliet
+  balustrades, a sectional garage door and a planted garden. One checkbox turns it off and
+  leaves the drawn house standing.
 - **Read it.** Room names and areas float over the model, and the drawing's area schedule is
   in the panel.
 - **In two languages.** The house is Portuguese and so are its drawings; the interface reads
@@ -96,7 +99,8 @@ The viewer keeps its state in the URL, so any view is a link you can send someon
 | `view` | `axo` `principal` `posterior` `esquerdo` `direito` `topo` | viewpoint |
 | `floor` | `cave` `ground` | isolate one floor |
 | `roof` | `0` | take the roof off |
-| `scheme` | `as-specified` `warm-minimal` `dark-contrast` `white-model` | finishes |
+| `scheme` | `as-specified` `design-ideas` `warm-minimal` `dark-contrast` `white-model` | finishes |
+| `design` | `0` | take the design layer off |
 | `ui` | `0` | hide the chrome, for embedding |
 | `lang` | `en` `pt` | interface language |
 | `labels` | `0` | hide the room names |
@@ -129,10 +133,26 @@ src/
     finishes.ts   material schemes; add new ones here
   scene/
     builder.ts    data → three.js geometry
+    exterior.ts   slat cladding, cove light, balustrades, the sectional garage door
+    furniture.ts  the interiors from the reference renders
+    planting.ts   hedges, shrubs and trees
     materials.ts  schemes → materials, incl. small procedural textures
     viewer.ts     renderer, camera, sun, orbit + walk controls
   main.ts         UI wiring
 ```
+
+## The design layer
+
+The drawings say what the house *is*. A separate set of reference renders says what it might
+look like finished, and everything taken from those lives behind the **Design ideas** switch:
+`scene/furniture.ts` fits out the rooms, `scene/exterior.ts` adds the timber slats, the eaves
+cove and the Juliet balustrades, `scene/planting.ts` puts in the garden, and the `design-ideas`
+scheme in `model/finishes.ts` carries the palette — cream render under a dark band, anthracite
+frames, pale oak and charcoal inside.
+
+It is all procedural, like everything else here: no imported models, no textures on disk. The
+reference images themselves are not in this repository, for the same reason the drawings are
+not.
 
 ## Adding a finish scheme
 

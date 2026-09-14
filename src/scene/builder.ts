@@ -27,6 +27,9 @@ import {
   type Wall,
 } from '../model/house'
 import { BOUNDARY, DRIVEWAY, ENTRANCE, PLOT, groundAt } from '../model/site'
+import { buildExterior, type GarageDoor } from './exterior'
+import { buildFurniture } from './furniture'
+import { buildPlanting } from './planting'
 import type { MaterialLibrary } from './materials'
 import type { SurfaceId } from '../model/finishes'
 
@@ -52,6 +55,17 @@ export interface HouseParts {
   siteWalls: THREE.Group
   site: THREE.Group
   stairs: THREE.Group
+  /**
+   * The layer taken from the reference renders rather than from the drawings: loose furniture
+   * per level, the timber slats and eaves lighting outside, and the garden. Kept as separate
+   * handles so the whole layer can be switched off and the drawn house left standing.
+   */
+  furnitureCave: THREE.Group
+  furnitureGround: THREE.Group
+  exterior: THREE.Group
+  planting: THREE.Group
+  /** The sectional garage door. Part of the house, not of the design layer — it always shows. */
+  garageDoor: GarageDoor
 }
 
 const box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d)
@@ -160,12 +174,14 @@ function buildWall(wall: Wall, lib: MaterialLibrary): THREE.Group {
 const FRAME = 0.06
 
 function buildGlazing(wall: Wall, o: Opening, lib: MaterialLibrary): THREE.Group | null {
-  if (o.kind === 'door' || o.kind === 'opening') return null
+  // The garage door is a sectional door that opens, built in `exterior.ts`; everything this
+  // function knows how to make is fixed in its reveal.
+  if (o.kind === 'door' || o.kind === 'opening' || o.kind === 'garage') return null
   const g = new THREE.Group()
   // Doorways and full-height glazing are things you walk through, so the walk camera skips
   // them when testing collisions — otherwise the front door is a wall.
   const floorLevel = wall.base ?? (wall.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor)
-  g.userData.passable = o.kind === 'entrance' || o.kind === 'garage' || o.sill <= floorLevel + 0.05
+  g.userData.passable = o.kind === 'entrance' || o.sill <= floorLevel + 0.05
   const frameMat = lib.get('frame')
   const glassMat = lib.get('glass')
   const width = o.to - o.from
@@ -197,12 +213,6 @@ function buildGlazing(wall: Wall, o: Opening, lib: MaterialLibrary): THREE.Group
   place(width, FRAME, mid, o.head - FRAME / 2, frameMat)
   place(FRAME, height, o.from + FRAME / 2, cy, frameMat)
   place(FRAME, height, o.to - FRAME / 2, cy, frameMat)
-
-  // The garage door is a solid panel, not glass.
-  if (o.kind === 'garage') {
-    place(width - FRAME * 2, height - FRAME * 2, mid, cy, frameMat, depth * 0.8)
-    return g
-  }
 
   // Mullions: panes of at most ~1.10 m.
   const panes = Math.max(1, Math.round(width / 1.1))
@@ -785,13 +795,28 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   cave.add(fixtures.cave)
   ground.add(fixtures.ground)
 
+  // Loose furniture goes inside its own level's group, so it hides with the floor as well as
+  // with the design layer — visibility is hierarchical, so the two switches compose.
+  const furniture = buildFurniture(lib)
+  cave.add(furniture.cave)
+  ground.add(furniture.ground)
+
   const slabs = buildSlabs(lib)
   cave.add(slabs.raft)
   const roof = buildRoof(lib)
   const stairs = buildStairs(lib)
   const site = buildSite(lib)
+  const planting = buildPlanting(lib)
+  site.group.add(planting)
+
+  const exterior = buildExterior(lib)
+  // The door hangs inside the reveal it fills, so it belongs to the basement's glazing and
+  // disappears with it when you isolate the floor above.
+  exterior.garage.group.userData.passable = true
+  glazingCave.add(exterior.garage.group)
 
   root.add(cave, ground, slabs.overCave, slabs.overGround, roof, glazingCave, glazingGround, stairs, site.group)
+  root.add(exterior.group)
   root.name = 'house'
 
   return {
@@ -808,5 +833,10 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
     siteWalls: site.walls,
     site: site.group,
     stairs,
+    furnitureCave: furniture.cave,
+    furnitureGround: furniture.ground,
+    exterior: exterior.group,
+    planting,
+    garageDoor: exterior.garage,
   }
 }

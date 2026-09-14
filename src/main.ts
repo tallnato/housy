@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import './styles.css'
 import { LEVELS, ROOMS, SCHEDULE, SIZE, roomArea, roomCentre, type Level } from './model/house'
-import { SCHEMES, schemeById, AS_SPECIFIED } from './model/finishes'
+import { SCHEMES, schemeById, AS_SPECIFIED, DESIGN_IDEAS } from './model/finishes'
 import { MaterialLibrary } from './scene/materials'
 import { buildHouse } from './scene/builder'
 import { SPOT_LEVELS } from './model/site'
@@ -57,6 +57,7 @@ function writeUrl() {
   if (!labelsOn) p.set('labels', '0')
   if (floorMode !== 'all') p.set('floor', floorMode)
   if (!roofOn) p.set('roof', '0')
+  if (!designOn) p.set('design', '0')
   if (lib.current.id !== AS_SPECIFIED.id) p.set('scheme', lib.current.id)
   const q = p.toString()
   history.replaceState(null, '', q ? `?${q}` : location.pathname)
@@ -135,6 +136,35 @@ $<HTMLInputElement>('#roof-on').addEventListener('change', (e) => {
 })
 $<HTMLInputElement>('#site-on').addEventListener('change', (e) => {
   parts.site.visible = (e.target as HTMLInputElement).checked
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The design layer
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Everything taken from the reference renders rather than from the drawing set. It is one
+// switch because it is one proposal: the furniture, the timber slats and eaves lighting, and
+// the garden all came out of the same images.
+let designOn = params.get('design') !== '0'
+
+function applyDesign() {
+  parts.furnitureCave.visible = designOn
+  parts.furnitureGround.visible = designOn
+  parts.exterior.visible = designOn
+  parts.planting.visible = designOn
+}
+
+const designToggle = $<HTMLInputElement>('#design-on')
+designToggle.checked = designOn
+designToggle.addEventListener('change', () => {
+  designOn = designToggle.checked
+  applyDesign()
+  // The renders are a palette as much as a set of objects, so the finishes follow the switch —
+  // but only while the two still agree, so a scheme picked by hand is never overruled.
+  const from = designOn ? AS_SPECIFIED.id : DESIGN_IDEAS.id
+  const to = designOn ? DESIGN_IDEAS.id : AS_SPECIFIED.id
+  if (lib.current.id === from) selectScheme(to)
+  writeUrl()
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -245,14 +275,17 @@ for (const s of SCHEMES) {
 }
 schemeNote.textContent = tScheme(AS_SPECIFIED.id, 'note', AS_SPECIFIED.note)
 
-schemesEl.addEventListener('click', (e) => {
-  const btn = (e.target as HTMLElement).closest('button[data-scheme]') as HTMLButtonElement | null
-  if (!btn) return
-  const scheme = schemeById(btn.dataset.scheme!)
+function selectScheme(id: string) {
+  const scheme = schemeById(id)
   lib.apply(scheme)
   schemeNote.textContent = tScheme(scheme.id, 'note', scheme.note)
-  for (const b of schemesEl.querySelectorAll('button')) b.classList.toggle('on', b === btn)
+  for (const b of schemesEl.querySelectorAll('button')) b.classList.toggle('on', b.dataset.scheme === scheme.id)
   writeUrl()
+}
+
+schemesEl.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button[data-scheme]') as HTMLButtonElement | null
+  if (btn) selectScheme(btn.dataset.scheme!)
 })
 
 retranslators.push(() => {
@@ -417,11 +450,13 @@ if (params.get('labels') === '0') {
   $<HTMLInputElement>('#labels-on').checked = false
 }
 
+applyDesign()
+
+// The design layer opens on by default, and with it the finishes it was drawn with; a scheme
+// named in the link always wins.
 const wantedScheme = params.get('scheme')
-if (wantedScheme) {
-  const btn = schemesEl.querySelector<HTMLButtonElement>(`button[data-scheme="${CSS.escape(wantedScheme)}"]`)
-  btn?.click()
-}
+if (wantedScheme && SCHEMES.some((s) => s.id === wantedScheme)) selectScheme(wantedScheme)
+else if (designOn) selectScheme(DESIGN_IDEAS.id)
 
 const wantedFloor = params.get('floor')
 if (wantedFloor === 'cave' || wantedFloor === 'ground') {
