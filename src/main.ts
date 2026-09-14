@@ -58,6 +58,7 @@ function writeUrl() {
   if (floorMode !== 'all') p.set('floor', floorMode)
   if (!roofOn) p.set('roof', '0')
   if (!designOn) p.set('design', '0')
+  if (!streetOn) p.set('street', '0')
   if (lib.current.id !== AS_SPECIFIED.id) p.set('scheme', lib.current.id)
   const q = p.toString()
   history.replaceState(null, '', q ? `?${q}` : location.pathname)
@@ -138,6 +139,16 @@ $<HTMLInputElement>('#site-on').addEventListener('change', (e) => {
   parts.site.visible = (e.target as HTMLInputElement).checked
 })
 
+// The street is outside the plot, so it hides on its own switch rather than with the site.
+let streetOn = params.get('street') !== '0'
+const streetToggle = $<HTMLInputElement>('#street-on')
+streetToggle.checked = streetOn
+streetToggle.addEventListener('change', () => {
+  streetOn = streetToggle.checked
+  parts.street.group.visible = streetOn
+  writeUrl()
+})
+
 // ─────────────────────────────────────────────────────────────────────────────
 // The design layer
 // ─────────────────────────────────────────────────────────────────────────────
@@ -159,6 +170,7 @@ designToggle.checked = designOn
 designToggle.addEventListener('change', () => {
   designOn = designToggle.checked
   applyDesign()
+parts.street.group.visible = streetOn
   // The renders are a palette as much as a set of objects, so the finishes follow the switch —
   // but only while the two still agree, so a scheme picked by hand is never overruled.
   const from = designOn ? AS_SPECIFIED.id : DESIGN_IDEAS.id
@@ -206,8 +218,15 @@ function lookDownOn(level: Level) {
 // Floors, slabs, stairs and the ground are what you stand on; walls and glazing are what you
 // bump into. Both are raycast against the real geometry, so nothing is described twice.
 viewer.setWalkGeometry(
-  [...parts.floors, parts.slabOverCave, parts.stairs, parts.paving],
-  [parts.cave, parts.ground, parts.glazingCave, parts.glazingGround, parts.siteWalls],
+  [...parts.floors, parts.slabOverCave, parts.stairs, parts.paving, parts.street.paving],
+  [
+    parts.cave,
+    parts.ground,
+    parts.glazingCave,
+    parts.glazingGround,
+    parts.siteWalls,
+    parts.street.solid,
+  ],
 )
 
 const walkBtn = $<HTMLButtonElement>('#walk')
@@ -451,6 +470,7 @@ if (params.get('labels') === '0') {
 }
 
 applyDesign()
+parts.street.group.visible = streetOn
 
 // The design layer opens on by default, and with it the finishes it was drawn with; a scheme
 // named in the link always wins.

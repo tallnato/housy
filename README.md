@@ -18,6 +18,8 @@ and published as a static site.
 - **Walk around it.** Orbit the model, or drop into a first-person walkthrough and go inside.
   The walker raycasts the real geometry, so the stairs work as stairs and the walls stop you.
 - **Peel it apart.** Show the basement, the ground floor, or both; hide the roof; hide the site.
+- **Arrive at it.** The plot fronts a street, with a sliding gate on the driveway axis and a
+  pedestrian gate on the entrance axis.
 - **Move the sun.** Azimuth and altitude sliders, with real shadows.
 - **Try finishes.** Switch the whole house between material schemes.
 - **See the design ideas.** A second layer, from the owner's reference renders rather than
@@ -101,6 +103,7 @@ The viewer keeps its state in the URL, so any view is a link you can send someon
 | `roof` | `0` | take the roof off |
 | `scheme` | `as-specified` `design-ideas` `warm-minimal` `dark-contrast` `white-model` | finishes |
 | `design` | `0` | take the design layer off |
+| `street` | `0` | hide the road and the gates |
 | `ui` | `0` | hide the chrome, for embedding |
 | `lang` | `en` `pt` | interface language |
 | `labels` | `0` | hide the room names |
@@ -130,12 +133,14 @@ src/
   model/
     house.ts      the building as data — levels, walls, openings, rooms
     site.ts       plot outline and the ground surface (relative coordinates only)
+    street.ts     the road cross-section and the two gates (relative coordinates only)
     finishes.ts   material schemes; add new ones here
   scene/
     builder.ts    data → three.js geometry
     exterior.ts   slat cladding, cove light, balustrades, the sectional garage door
     furniture.ts  the interiors from the reference renders
     planting.ts   hedges, shrubs and trees
+    street.ts     carriageway, kerb, footpath, and the gates that open
     materials.ts  schemes → materials, incl. small procedural textures
     viewer.ts     renderer, camera, sun, orbit + walk controls
   main.ts         UI wiring
@@ -185,8 +190,11 @@ This repository is public, so it deliberately contains **no location and no pers
   anywhere in the code or the UI.
 - No owner, architect or certificate details.
 - The plot outline in `src/model/site.ts` is stored purely as **offsets from the house's own
-  corner** — a shape, with nothing to pin it to a map. Neighbouring buildings and the road are
-  not modelled at all.
+  corner** — a shape, with nothing to pin it to a map. Neighbouring buildings are not modelled
+  at all.
+- The street in `src/model/street.ts` is a **cross-section, not a place**: a carriageway width,
+  a kerb height and two gate openings, every one of them measured out from the plot's own front
+  boundary. It carries no name, no signage, no house number and no alignment.
 - The drawings give no north point, so the sun direction is a free slider rather than a real
   orientation.
 

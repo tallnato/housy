@@ -27,6 +27,8 @@ import {
   type Wall,
 } from '../model/house'
 import { BOUNDARY, DRIVEWAY, ENTRANCE, PLOT, groundAt } from '../model/site'
+import { inGateOpening } from '../model/street'
+import { buildStreet, type StreetParts } from './street'
 import { buildExterior, type GarageDoor } from './exterior'
 import { buildFurniture } from './furniture'
 import { buildPlanting } from './planting'
@@ -66,6 +68,8 @@ export interface HouseParts {
   planting: THREE.Group
   /** The sectional garage door. Part of the house, not of the design layer — it always shows. */
   garageDoor: GarageDoor
+  /** The road, the footpath and the two gates. */
+  street: StreetParts
 }
 
 const box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d)
@@ -702,8 +706,11 @@ function buildSite(lib: MaterialLibrary): Site {
     const [x0, y0] = PLOT[i]
     const [x1, y1] = PLOT[(i + 1) % PLOT.length]
     const len = Math.hypot(x1 - x0, y1 - y0)
-    const steps = Math.max(2, Math.round(len / 1.2))
+    // Walled edges are laid finely enough that the gate openings land on the pier faces: at
+    // the 1.2 m spacing the ribbon is otherwise built at, a 5 m gap would be cut to the
+    // nearest metre and the gate would stand in front of a wall it does not close.
     const walled = BOUNDARY.walledEdges.includes(i)
+    const steps = Math.max(2, Math.round(len / (walled ? 0.2 : 1.2)))
     const height = walled ? BOUNDARY.wall.height : BOUNDARY.fence.height
 
     if (walled) {
@@ -721,6 +728,7 @@ function buildSite(lib: MaterialLibrary): Site {
         const ay = y0 + (y1 - y0) * ta
         const bx = x0 + (x1 - x0) * tb
         const by = y0 + (y1 - y0) * tb
+        if (inGateOpening((ax + bx) / 2)) continue
         const az = groundAt(ax, ay) - 0.15
         const bz = groundAt(bx, by) - 0.15
         // Two faces and a cap.
@@ -809,6 +817,7 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   const planting = buildPlanting(lib)
   site.group.add(planting)
 
+  const street = buildStreet(lib)
   const exterior = buildExterior(lib)
   // The door hangs inside the reveal it fills, so it belongs to the basement's glazing and
   // disappears with it when you isolate the floor above.
@@ -816,7 +825,7 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   glazingCave.add(exterior.garage.group)
 
   root.add(cave, ground, slabs.overCave, slabs.overGround, roof, glazingCave, glazingGround, stairs, site.group)
-  root.add(exterior.group)
+  root.add(exterior.group, street.group)
   root.name = 'house'
 
   return {
@@ -838,5 +847,6 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
     exterior: exterior.group,
     planting,
     garageDoor: exterior.garage,
+    street,
   }
 }
