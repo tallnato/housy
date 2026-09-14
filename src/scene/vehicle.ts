@@ -34,8 +34,13 @@ const AXLE_R = AXLE_F + WHEELBASE
 
 /** Edge radius of the shell, and so also how far the mid-plane stands proud of the flank. */
 const BODY_BEVEL = 0.04
-const GLASS_BEVEL = 0.03
-const CABIN_WIDTH = 1.73
+/** Set only 25 mm inside the body's widest point: any more and the glass sits on a white ledge. */
+const CABIN_WIDTH = 1.8
+const CABIN_HALF = CABIN_WIDTH / 2
+/** Radius of the roof rail, and how much crown the panoramic pane is allowed. A roof is nearly
+ *  flat across its width; give the extrusion a fat bevel and it inflates into a bubble. */
+const CABIN_ROLL = 0.022
+const CABIN_CROWN = 0.014
 
 /** Extremes of the drawn (flank) profile. The mid-plane reaches the full LENGTH and CLEARANCE. */
 const TIP = LENGTH / 2 - BODY_BEVEL
@@ -75,8 +80,16 @@ const RUBBER = new THREE.MeshStandardMaterial({ color: '#141517', roughness: 0.9
 const LINER = new THREE.MeshStandardMaterial({ color: '#08090a', roughness: 1 })
 const ALLOY = new THREE.MeshStandardMaterial({ color: '#949aa0', roughness: 0.38, metalness: 0.85 })
 const ALLOY_DARK = new THREE.MeshStandardMaterial({ color: '#3a3f45', roughness: 0.5, metalness: 0.7 })
+/** Smoked lens. The unit is mostly dark: only the element inside it lights up. */
+const LAMP_LENS = new THREE.MeshPhysicalMaterial({
+  color: '#2b323b',
+  roughness: 0.08,
+  metalness: 0.1,
+  clearcoat: 1,
+  clearcoatRoughness: 0.05,
+})
 const HEAD_LAMP = new THREE.MeshStandardMaterial({
-  color: '#dfe6ee',
+  color: '#c8d3df',
   emissive: '#ffe9c4',
   emissiveIntensity: 0,
   roughness: 0.14,
@@ -115,33 +128,84 @@ function axle(radius: number, length: number, segments: number): THREE.CylinderG
  * (z, y); turning the result about Y lands the extrusion depth on the width axis and leaves the
  * profile where it was drawn.
  */
-function extrudeAcross(shape: THREE.Shape, width: number, bevel: number): THREE.BufferGeometry {
+function extrudeAcross(
+  shape: THREE.Shape,
+  width: number,
+  roll: number,
+  crown = roll,
+): THREE.BufferGeometry {
   const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: width - bevel * 2,
+    depth: width - roll * 2,
     bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
+    bevelThickness: roll,
+    bevelSize: crown,
     bevelSegments: 4,
     curveSegments: 18,
     steps: 1,
   })
   geo.rotateY(-Math.PI / 2)
-  geo.translate(width / 2 - bevel, 0, 0)
+  geo.translate(width / 2 - roll, 0, 0)
   return geo
 }
 
 /**
- * Squeeze a geometry laterally as it rises. This is the cabin's tumblehome: a Model 3's roof is
- * the better part of 0.35 m narrower than its shoulders, and without it the greenhouse reads as
- * a slab rather than a canopy.
+ * Squeeze a geometry laterally as it rises: the cabin's tumblehome. The easing is front-loaded
+ * on purpose — nearly all the width goes at the shoulder, just above the belt, leaving the upper
+ * glass and the roof close to parallel. Spread the same taper evenly and the greenhouse turns
+ * into one continuous inflated curve from belt to crown.
  */
 function tumblehome(geo: THREE.BufferGeometry, from: number, to: number, narrow: number) {
   const pos = geo.attributes.position as THREE.BufferAttribute
   for (let i = 0; i < pos.count; i++) {
     const t = THREE.MathUtils.clamp((pos.getY(i) - from) / (to - from), 0, 1)
-    pos.setX(i, pos.getX(i) * (1 - narrow * t * t * (3 - 2 * t)))
+    pos.setX(i, pos.getX(i) * (1 - narrow * t * (2 - t)))
   }
   geo.computeVertexNormals()
+}
+
+/**
+ * Split every triangle that spans more than `limit` in height. The tumblehome is a function of
+ * height alone, and ExtrudeGeometry triangulates its end caps as coarsely as it can get away
+ * with — fine while they are flat, but the cabin's caps are its flanks. With two or three
+ * vertices between belt and roof they bulge outwards under the taper instead of leaning in,
+ * and the greenhouse inflates into a bubble. The side walls already step per contour point, so
+ * this only ever touches the caps.
+ */
+function sliceByHeight(geo: THREE.BufferGeometry, limit: number): THREE.BufferGeometry {
+  const pos = geo.attributes.position as THREE.BufferAttribute
+  let tris: THREE.Vector3[][] = []
+  for (let i = 0; i < pos.count; i += 3) {
+    tris.push([0, 1, 2].map((k) => new THREE.Vector3().fromBufferAttribute(pos, i + k)))
+  }
+  for (let pass = 0; pass < 8; pass++) {
+    const out: THREE.Vector3[][] = []
+    let split = false
+    for (const t of tris) {
+      const climb = [Math.abs(t[1].y - t[2].y), Math.abs(t[2].y - t[0].y), Math.abs(t[0].y - t[1].y)]
+      const k = climb.indexOf(Math.max(...climb))
+      if (climb[k] <= limit) {
+        out.push(t)
+        continue
+      }
+      split = true
+      const [a, b, c] = [t[k], t[(k + 1) % 3], t[(k + 2) % 3]]
+      const m = b.clone().add(c).multiplyScalar(0.5)
+      out.push([a, b, m], [a, m, c])
+    }
+    tris = out
+    if (!split) break
+  }
+  const data: number[] = []
+  for (const t of tris) for (const p of t) data.push(p.x, p.y, p.z)
+  const next = new THREE.BufferGeometry()
+  next.setAttribute('position', new THREE.Float32BufferAttribute(data, 3))
+  next.computeVertexNormals()
+  return next
+}
+
+/** The cabin's taper, shared by the glass and by every piece of trim laid on it. */
+function cabinTaper(geo: THREE.BufferGeometry) {
+  tumblehome(geo, 0.95, 1.4, 0.235)
 }
 
 /**
@@ -221,11 +285,12 @@ function bodyProfile(): THREE.Shape {
 
   // Step down into the cabin trough and run the belt line forward, rising a little towards the rear.
   s.lineTo(1.556, 0.938)
-  s.lineTo(-1.108, 0.898)
+  s.lineTo(-1.135, 0.906)
 
-  // Cowl, bonnet, and a nose with nothing on it: no grille, just a fascia falling away.
-  s.lineTo(-1.246, 0.93)
-  s.quadraticCurveTo(-1.77, 0.922, -2.086, 0.842)
+  // The cowl is the crest of the bonnet and the foot of the windscreen at once: the glass passes
+  // under it a few millimetres down, so the two overlap instead of butting with a slot between.
+  s.lineTo(-1.2, 0.964)
+  s.quadraticCurveTo(-1.74, 0.946, -2.086, 0.842)
   s.quadraticCurveTo(-2.252, 0.8, -2.284, 0.726)
   s.quadraticCurveTo(-TIP, 0.668, -TIP, 0.59)
   s.lineTo(-TIP, 0.47)
@@ -240,15 +305,96 @@ function bodyProfile(): THREE.Shape {
  */
 function cabinProfile(): THREE.Shape {
   const s = new THREE.Shape()
-  s.moveTo(-1.31, 0.812)
+  s.moveTo(-1.4, 0.79) // buried under the bonnet
   s.lineTo(1.8, 0.872)
   s.lineTo(1.726, 1.052) // foot of the rear screen, tucked under the boot lid's leading edge
-  s.quadraticCurveTo(1.196, 1.284, 0.714, 1.378)
-  s.quadraticCurveTo(0.266, 1.436, -0.188, 1.396) // crown, just behind the B-pillar
-  s.quadraticCurveTo(-0.426, 1.376, -0.564, 1.336)
-  s.quadraticCurveTo(-1.02, 1.15, -1.264, 0.922) // windscreen
+  s.quadraticCurveTo(1.196, 1.276, 0.714, 1.366)
+  s.quadraticCurveTo(0.266, 1.484, -0.188, 1.382) // crown, just behind the B-pillar
+  s.quadraticCurveTo(-0.43, 1.352, -0.57, 1.308)
+  s.quadraticCurveTo(-1.01, 1.088, -1.35, 0.86) // windscreen, running on under the cowl
   s.closePath()
   return s
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pillars and the daylight opening. Without them the cabin is a black slab: nothing tells the
+// eye where the doors are, and the whole greenhouse reads as one inflated shape.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const poly = (pts: ReadonlyArray<readonly [number, number]>): THREE.Shape => {
+  const s = new THREE.Shape()
+  pts.forEach(([z, y], i) => (i === 0 ? s.moveTo(z, y) : s.lineTo(z, y)))
+  s.closePath()
+  return s
+}
+
+/** Window surround: the belt under the daylight opening, and the blacked-out B-pillar. */
+function dloSurround(): THREE.Shape[] {
+  return [
+    poly([
+      [-1.135, 0.905],
+      [1.56, 0.945],
+      [1.56, 1.013],
+      [-1.135, 0.988],
+    ]),
+    poly([
+      [0.01, 0.965],
+      [0.09, 0.965],
+      [0.09, 1.385],
+      [0.01, 1.382],
+    ]),
+  ]
+}
+
+/** The pillars a white Model 3 wears in body colour: the A-post, the C-post and the rear quarter. */
+function bodyPillars(): THREE.Shape[] {
+  return [
+    // A-pillar: a band laid along the back of the windscreen, following its curve up to the roof.
+    poly([
+      [-1.165, 0.975],
+      [-1.07, 0.975],
+      [-0.905, 1.077],
+      [-0.755, 1.141],
+      [-0.605, 1.242],
+      [-0.505, 1.31],
+      [-0.6, 1.274],
+      [-0.7, 1.242],
+      [-0.85, 1.141],
+      [-1.0, 1.077],
+    ]),
+    // C-pillar, between the rear door glass and the quarter light.
+    poly([
+      [1.02, 0.985],
+      [1.15, 0.995],
+      [1.185, 1.205],
+      [1.07, 1.262],
+    ]),
+    // Rear quarter, closing the quarter light off behind.
+    poly([
+      [1.42, 0.955],
+      [1.735, 0.985],
+      [1.69, 1.05],
+      [1.32, 1.155],
+    ]),
+  ]
+}
+
+/**
+ * A thin plate laid on the cabin's flank. It gets the same taper as the glass, so it stays on the
+ * surface all the way up instead of cutting through it where the sides lean in.
+ */
+function flankPlate(shapes: THREE.Shape[], proud: number): THREE.BufferGeometry {
+  const raw = new THREE.ExtrudeGeometry(shapes, {
+    depth: proud + 0.005,
+    bevelEnabled: false,
+    curveSegments: 4,
+    steps: 1,
+  })
+  raw.rotateY(-Math.PI / 2)
+  raw.translate(CABIN_HALF + proud, 0, 0)
+  const geo = sliceByHeight(raw, 0.05)
+  cabinTaper(geo)
+  return geo
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -313,25 +459,25 @@ const NOSE_RADIUS = 0.23
 
 /** Half a lamp in (lateral, along-the-fascia), pointed inboard and sweeping up into the wing. */
 const LAMP_OUTLINE: Array<[number, number]> = [
-  [0.27, 0.01],
-  [0.33, -0.014],
-  [0.43, -0.032],
-  [0.56, -0.04],
-  [0.68, -0.036],
-  [0.775, -0.02],
-  [0.822, 0.006],
-  [0.83, 0.036],
-  [0.8, 0.058],
-  [0.74, 0.056],
-  [0.63, 0.04],
-  [0.5, 0.03],
-  [0.38, 0.03],
-  [0.3, 0.026],
+  [0.255, 0.008],
+  [0.33, -0.011],
+  [0.43, -0.025],
+  [0.56, -0.031],
+  [0.68, -0.028],
+  [0.775, -0.016],
+  [0.826, 0.005],
+  [0.836, 0.028],
+  [0.805, 0.045],
+  [0.74, 0.043],
+  [0.63, 0.031],
+  [0.5, 0.023],
+  [0.38, 0.023],
+  [0.29, 0.02],
 ]
 
 function lampShape(inset: number): THREE.Shape {
   const cx = 0.55
-  const cy = 0.008
+  const cy = 0.006
   const k = 1 - inset
   const s = new THREE.Shape()
   LAMP_OUTLINE.forEach(([x, y], i) => {
@@ -404,11 +550,22 @@ export class Car {
     const body = smooth(extrudeAcross(bodyProfile(), WIDTH, BODY_BEVEL), 0.9)
     this.group.add(part(body, PAINT))
 
-    const cabin = extrudeAcross(cabinProfile(), CABIN_WIDTH, GLASS_BEVEL)
-    tumblehome(cabin, 0.98, 1.38, 0.2)
+    const shell = extrudeAcross(cabinProfile(), CABIN_WIDTH, CABIN_ROLL, CABIN_CROWN)
+    const cabin = sliceByHeight(shell, 0.05)
+    cabinTaper(cabin)
     const glass = part(smooth(cabin, 0.9), GLASS)
     glass.castShadow = false
     this.group.add(glass)
+
+    const surround = flankPlate(dloSurround(), 0.012)
+    const pillars = flankPlate(bodyPillars(), 0.014)
+    for (const side of [-1, 1]) {
+      const black = part(surround, TRIM)
+      const painted = part(pillars, PAINT)
+      black.scale.x = side
+      painted.scale.x = side
+      this.group.add(black, painted)
+    }
 
     // Arch liners: a dark block behind each pair of wheels, inboard of the tyres so it backs
     // them rather than hides them, and wide enough that you cannot see through the car.
@@ -431,7 +588,17 @@ export class Car {
     // Panel gaps, drawn rather than modelled — three dark lines per side.
     const shut = box(0.008, 0.58, 0.006)
     // Mirror head, stalk and glass. 0.12 m of arm each side takes the car to its mirrored width.
-    const pod = box(0.14, 0.072, 0.1)
+    const pod = extrudeAcross(
+      poly([
+        [-0.048, -0.026],
+        [0.044, -0.02],
+        [0.05, 0.018],
+        [0.02, 0.03],
+        [-0.048, 0.024],
+      ]),
+      0.14,
+      0.022,
+    )
     const stalk = axle(0.026, 0.1, 12)
     const mirror = box(0.11, 0.052, 0.006)
 
@@ -442,9 +609,9 @@ export class Car {
       for (const z of [-1.05, 0.06, 0.95]) {
         this.group.add(part(shut, TRIM, side * (flank + 0.001), 0.59, z))
       }
-      this.group.add(part(stalk, TRIM, side * 0.9, 0.985, -0.84))
-      this.group.add(part(pod, PAINT, side * 0.9745, 1.005, -0.84))
-      const pane = part(mirror, GLASS, side * 0.9745, 1.005, -0.786)
+      this.group.add(part(stalk, TRIM, side * 0.9, 0.985, -0.87))
+      this.group.add(part(pod, PAINT, side * 0.9745, 1.0, -0.87))
+      const pane = part(mirror, GLASS, side * 0.9745, 1.0, -0.816)
       pane.castShadow = false
       this.group.add(pane)
       // Corner intakes, raked outboard the way the bumper's are.
@@ -465,13 +632,15 @@ export class Car {
 
   private buildLamps() {
     const housing = lampGeometry(0, 0.06, 0.006)
-    const lens = lampGeometry(0.18, 0.03, 0.004)
+    const lens = lampGeometry(0.16, 0.035, 0.004)
+    const element = lampGeometry(0.46, 0.02, 0.003)
     for (const side of [-1, 1]) {
       const unit = new THREE.Group()
-      unit.position.set(0, 0.725, -2.3325)
+      unit.position.set(0, 0.728, -2.3315)
       unit.rotation.x = NOSE_RAKE
       unit.scale.x = side
-      unit.add(part(housing, TRIM), part(lens, this.head, 0, 0, -0.004))
+      unit.add(part(housing, TRIM), part(lens, LAMP_LENS, 0, 0, -0.004))
+      unit.add(part(element, this.head, 0, 0, -0.011))
       this.group.add(unit)
     }
 
