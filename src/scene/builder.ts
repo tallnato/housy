@@ -41,7 +41,9 @@ export interface HouseParts {
   slabOverGround: THREE.Object3D
   /** Structural slab over the basement. */
   slabOverCave: THREE.Object3D
-  glazing: THREE.Group
+  /** Windows and doors, split by level so they hide with their floor. */
+  glazingCave: THREE.Group
+  glazingGround: THREE.Group
   site: THREE.Group
   stairs: THREE.Group
 }
@@ -121,8 +123,10 @@ function buildWall(wall: Wall, lib: MaterialLibrary): THREE.Group {
 
   let cursor = wall.from
   for (const o of openings) {
-    const from = Math.max(o.from, wall.from)
-    const to = Math.min(o.to, wall.to)
+    // Clamp to the wall and skip anything already covered, so an opening that overruns its
+    // wall (or overlaps its neighbour) degrades quietly instead of walling up the one before it.
+    const from = Math.min(Math.max(o.from, cursor), wall.to)
+    const to = Math.min(Math.max(o.to, from), wall.to)
     if (to <= cursor) continue
 
     // Pier before the opening
@@ -210,10 +214,31 @@ function buildGlazing(wall: Wall, o: Opening, lib: MaterialLibrary): THREE.Group
 
 interface Slabs {
   raft: THREE.Mesh
-  /** Basement ceiling / ground floor structure. */
-  overCave: THREE.Mesh
+  /** Basement ceiling / ground floor structure, with the stairwell void in it. */
+  overCave: THREE.Group
   /** Ground floor ceiling / roof structure. */
   overGround: THREE.Mesh
+}
+
+/**
+ * The footprint minus one rectangular void, as four rectangles. Used to build a slab with a
+ * stairwell opening in it without reaching for CSG.
+ */
+function slabPiecesAround(
+  hx0: number,
+  hy0: number,
+  hx1: number,
+  hy1: number,
+): Array<[number, number, number, number]> {
+  const W = SIZE.width - 0.02
+  const D = SIZE.depth - 0.02
+  const o = 0.01
+  return [
+    [o, o, W, hy0], // rear of the void
+    [o, hy1, W, D], // front of the void
+    [o, hy0, hx0, hy1], // left of it
+    [hx1, hy0, W, hy1], // right of it
+  ]
 }
 
 function buildSlabs(lib: MaterialLibrary): Slabs {
@@ -230,9 +255,16 @@ function buildSlabs(lib: MaterialLibrary): Slabs {
     SIZE.depth / 2,
   )
 
-  // The deep transfer slab that spans the column-free garage below.
+  // The deep transfer slab that spans the column-free garage below — with the stairwell
+  // punched out of it, or the two floors would never connect.
   const gfThick = LEVELS.groundFloor - LEVELS.caveCeiling
-  const overCave = mesh(box(W, gfThick, D), lib.get('ceiling'), SIZE.width / 2, LEVELS.caveCeiling + gfThick / 2, SIZE.depth / 2)
+  const overCave = new THREE.Group()
+  overCave.name = 'slab-over-cave'
+  for (const [x0, y0, x1, y1] of slabPiecesAround(STAIR.x0, STAIR.y0, STAIR.x1, STAIR.y1)) {
+    overCave.add(
+      mesh(box(x1 - x0, gfThick, y1 - y0), lib.get('ceiling'), (x0 + x1) / 2, LEVELS.caveCeiling + gfThick / 2, (y0 + y1) / 2),
+    )
+  }
 
   // The 0.15 m void between the finished ceiling and the roof soffit.
   const voidThick = LEVELS.roofSoffit - LEVELS.groundCeiling
@@ -527,10 +559,21 @@ function buildGround(lib: MaterialLibrary): THREE.Group {
   for (let i = 0; i < PLOT.length; i++) {
     const [x0, y0] = PLOT[i]
     const [x1, y1] = PLOT[(i + 1) % PLOT.length]
-    const h0 = groundAt(x0, y0)
-    const h1 = groundAt(x1, y1)
-    skirt.push(x0, h0, y0, x0, base, y0, x1, h1, y1)
-    skirt.push(x1, h1, y1, x0, base, y0, x1, base, y1)
+    // The surface is sampled per vertex, so the skirt has to be too — a straight chord between
+    // the two corners misses it by up to a metre where the ground steps.
+    const steps = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 1.0))
+    for (let k = 0; k < steps; k++) {
+      const ta = k / steps
+      const tb = (k + 1) / steps
+      const ax = x0 + (x1 - x0) * ta
+      const ay = y0 + (y1 - y0) * ta
+      const bx = x0 + (x1 - x0) * tb
+      const by = y0 + (y1 - y0) * tb
+      const ha = groundAt(ax, ay)
+      const hb = groundAt(bx, by)
+      skirt.push(ax, ha, ay, ax, base, ay, bx, hb, by)
+      skirt.push(bx, hb, by, ax, base, ay, bx, base, by)
+    }
   }
   const sgeo = new THREE.BufferGeometry()
   sgeo.setAttribute('position', new THREE.Float32BufferAttribute(skirt, 3))
@@ -603,7 +646,7 @@ function buildSite(lib: MaterialLibrary): THREE.Group {
     g.add(m)
   }
 
-  pave(-2.2, SIZE.depth, 8.0, 14.2, paveMat) // entrance terrace
+  pave(-2.2, SIZE.depth, 7.6, 14.6, paveMat) // entrance terrace
   pave(-2.6, -4.4, 16.8, 0, paveMat) // rear yard
   pave(DRIVEWAY.x0, DRIVEWAY.yBottom, DRIVEWAY.x1, DRIVEWAY.yTop, lib.get('driveway'))
 
@@ -687,23 +730,25 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   const root = new THREE.Group()
   const cave = new THREE.Group()
   const ground = new THREE.Group()
-  const glazing = new THREE.Group()
+  const glazingCave = new THREE.Group()
+  const glazingGround = new THREE.Group()
   cave.name = 'cave'
   ground.name = 'ground'
-  glazing.name = 'glazing'
+  glazingCave.name = 'glazing-cave'
+  glazingGround.name = 'glazing-ground'
 
   for (const w of CAVE_WALLS) {
     cave.add(buildWall(w, lib))
     for (const o of w.openings ?? []) {
       const gz = buildGlazing(w, o, lib)
-      if (gz) glazing.add(gz)
+      if (gz) glazingCave.add(gz)
     }
   }
   for (const w of GROUND_WALLS) {
     ground.add(buildWall(w, lib))
     for (const o of w.openings ?? []) {
       const gz = buildGlazing(w, o, lib)
-      if (gz) glazing.add(gz)
+      if (gz) glazingGround.add(gz)
     }
   }
 
@@ -721,7 +766,7 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   const stairs = buildStairs(lib)
   const site = buildSite(lib)
 
-  root.add(cave, ground, slabs.overCave, slabs.overGround, roof, glazing, stairs, site)
+  root.add(cave, ground, slabs.overCave, slabs.overGround, roof, glazingCave, glazingGround, stairs, site)
   root.name = 'house'
 
   return {
@@ -731,7 +776,8 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
     roof,
     slabOverCave: slabs.overCave,
     slabOverGround: slabs.overGround,
-    glazing,
+    glazingCave,
+    glazingGround,
     site,
     stairs,
   }

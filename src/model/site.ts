@@ -86,9 +86,9 @@ interface Pad {
 
 const PADS: Pad[] = [
   // Entrance terrace across the front of the house, at the foot of the steps
-  { x0: -2.5, y0: 10.4, x1: 8.2, y1: 15.2, z: 0.47, falloff: 2.4, note: 'entrance terrace' },
+  { x0: -2.5, y0: 10.4, x1: 7.6, y1: 15.2, z: 0.47, falloff: 2.0, note: 'entrance terrace' },
   // Apron at the head of the driveway, in front of the garage
-  { x0: 7.8, y0: 13.6, x1: 14.2, y1: 16.2, z: -0.07, falloff: 2.0, note: 'head of the ramp' },
+  { x0: 7.9, y0: 13.9, x1: 13.5, y1: 15.2, z: -0.07, falloff: 1.0, note: 'head of the ramp' },
   // Rear yard, cut down so the basement opens onto it at grade
   { x0: -4.5, y0: -6.5, x1: 18.5, y1: 0.4, z: -1.69, falloff: 2.6, note: 'rear yard' },
 ]
@@ -112,8 +112,11 @@ export const DRIVEWAY = {
   /** Bottom, level with the garage floor, just outside the door. */
   yBottom: 10.501,
   zBottom: LEVELS.caveFloor - 0.05,
-  /** How far to the sides the cut blends back into the ground. */
-  falloff: 1.6,
+  /**
+   * How far the cut blends back into the ground. Deliberately tight: the trench is held by
+   * the retaining walls, so it should not slope out into the terrace beside it.
+   */
+  falloff: 0.45,
 }
 
 /**
@@ -190,9 +193,9 @@ export function groundAt(x: number, y: number): number {
     z = z * (1 - w) + p.z * w
   }
 
-  // Driveway trench
+  // Driveway trench. Only ever cuts downward, and only in front of the façade.
   const d = DRIVEWAY
-  const inBand = distToRect(x, y, d.x0, d.yBottom, d.x1, d.yTop)
+  const inBand = y < d.yBottom ? Infinity : distToRect(x, y, d.x0, d.yBottom, d.x1, d.yTop)
   if (inBand <= d.falloff) {
     const t = Math.min(1, Math.max(0, (y - d.yBottom) / (d.yTop - d.yBottom)))
     const rampZ = d.zBottom + (d.zTop - d.zBottom) * t

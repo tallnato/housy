@@ -191,7 +191,8 @@ export const GROUND_WALLS: Wall[] = [
     thickness: SIZE.wallExt,
     exterior: true,
     openings: [
-      // The entrance is a 2.30 m recess split by a 0.30 m pillar into two 1.00 m bays.
+      // The entrance is a 2.30 m recess split into two 1.00 m bays by a 0.30 m pillar — which
+      // is just the pier the wall leaves between these two openings.
       { from: 4.353, to: 5.353, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'entrance', label: 'Front door' },
       // The kitchen never reaches the front wall; this leaf lights the stair hall.
       { from: 5.653, to: 6.653, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'french', label: 'Entrance hall' },
@@ -292,8 +293,6 @@ export const GROUND_WALLS: Wall[] = [
   // Stair core — the west wall of the stairwell, hatched on the plan
   { id: 'g-p14', level: 'ground', run: 'y', at: 5.503, from: 5.201, to: 8.851, thickness: SIZE.wallInt },
 
-  // The pillar that splits the entrance recess — 0.30 × 0.31, standing off the inner face.
-  { id: 'g-pillar', level: 'ground', run: 'y', at: 5.503, from: 10.151, to: 10.461, thickness: 0.3 },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -356,16 +355,9 @@ export const CAVE_WALLS: Wall[] = [
   },
 
   // Laundry / wc block against the left wall
-  {
-    id: 'c-p1',
-    level: 'cave',
-    run: 'x',
-    at: 7.601,
-    from: 0.35,
-    to: 4.553,
-    thickness: SIZE.wallInt,
-    openings: [caveDoor(4.551, 5.351, 'Laundry')],
-  },
+  // The laundry wall stops 0.90 m short of the stair core; that gap is the way in, so there is
+  // no door in the wall itself.
+  { id: 'c-p1', level: 'cave', run: 'x', at: 7.601, from: 0.35, to: 4.553, thickness: SIZE.wallInt },
   { id: 'c-p2', level: 'cave', run: 'y', at: 1.902, from: 7.601, to: 10.151, thickness: SIZE.wallInt },
 
   // Stair core
@@ -524,9 +516,6 @@ export const FIXTURES: Fixture[] = [
   { level: 'ground', kind: 'hob', x0: 1.702, y0: 9.601, x1: 2.202, y1: 10.101, h: 0.02, base: 0.9 },
   { level: 'ground', kind: 'wardrobe', x0: 2.952, y0: 7.651, x1: 3.652, y1: 8.551, h: 2.2, label: 'larder' },
   { level: 'ground', kind: 'wardrobe', x0: 2.952, y0: 8.551, x1: 3.552, y1: 9.551, h: 2.2 },
-  // ── Átrio ─────────────────────────────────────────────────────────────────
-  { level: 'ground', kind: 'wardrobe', x0: 3.752, y0: 7.651, x1: 3.952, y1: 8.951, h: 2.2 },
-  { level: 'ground', kind: 'wardrobe', x0: 3.652, y0: 8.951, x1: 3.952, y1: 10.151, h: 2.2 },
   // ── Quartos (built-in wardrobes against the party partition) ──────────────
   { level: 'ground', kind: 'wardrobe', x0: 8.853, y0: 0.35, x1: 9.554, y1: 2.65, h: 2.2 },
   { level: 'ground', kind: 'wardrobe', x0: 9.654, y0: 0.35, x1: 10.354, y1: 2.65, h: 2.2 },

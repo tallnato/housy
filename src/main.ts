@@ -23,8 +23,16 @@ viewer.scene.add(parts.root)
 
 const params = new URLSearchParams(location.search)
 
+/** Parameters that are applied once at load and are not controls; carried through verbatim. */
+const PASSTHROUGH = ['view', 'cam', 'at', 'ui'] as const
+
 function writeUrl() {
   const p = new URLSearchParams()
+  for (const key of PASSTHROUGH) {
+    const v = params.get(key)
+    if (v !== null) p.set(key, v)
+  }
+  if (!labelsOn) p.set('labels', '0')
   if (floorMode !== 'all') p.set('floor', floorMode)
   if (!roofOn) p.set('roof', '0')
   if (lib.current.id !== AS_SPECIFIED.id) p.set('scheme', lib.current.id)
@@ -43,6 +51,10 @@ let roofOn = true
 function applyVisibility() {
   parts.cave.visible = floorMode !== 'ground'
   parts.ground.visible = floorMode !== 'cave'
+  // Glazing lives outside the floor groups, so it has to be told separately — otherwise
+  // isolating a floor leaves the other one's windows hanging in mid-air.
+  parts.glazingCave.visible = parts.cave.visible
+  parts.glazingGround.visible = parts.ground.visible
   // Looking at one floor means looking down into it, so everything above it has to go:
   // the roof build-up, the slab it sits on, and — for the basement — the floor above.
   const open = floorMode !== 'all' || !roofOn
@@ -111,7 +123,7 @@ function lookDownOn(level: Level) {
 // bump into. Both are raycast against the real geometry, so nothing is described twice.
 viewer.setWalkGeometry(
   [parts.cave, parts.ground, parts.slabOverCave, parts.stairs, parts.site],
-  [parts.cave, parts.ground, parts.glazing],
+  [parts.cave, parts.ground, parts.glazingCave, parts.glazingGround, parts.site],
 )
 
 const walkBtn = $<HTMLButtonElement>('#walk')
@@ -132,7 +144,11 @@ function setWalk(on: boolean) {
   }
 }
 
-walkBtn.addEventListener('click', () => setWalk(viewer.cameraMode !== 'walk'))
+walkBtn.addEventListener('click', () => {
+  setWalk(viewer.cameraMode !== 'walk')
+  // Otherwise the button keeps focus and the first Space or Enter throws you back out.
+  walkBtn.blur()
+})
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && viewer.cameraMode === 'walk') setWalk(false)
 })
@@ -187,7 +203,16 @@ const roomList = $('#rooms')
 ROOMS.filter((r) => r.area).forEach((r, i) => {
   const li = document.createElement('li')
   li.dataset.idx = String(i)
-  li.innerHTML = `<span>${r.name} <span class="lvl">${r.level === 'cave' ? 'basement' : 'ground'}</span></span><span class="area">${r.area}</span>`
+  const label = document.createElement('span')
+  label.append(r.name + ' ')
+  const lvl = document.createElement('span')
+  lvl.className = 'lvl'
+  lvl.textContent = r.level === 'cave' ? 'basement' : 'ground'
+  label.append(lvl)
+  const area = document.createElement('span')
+  area.className = 'area'
+  area.textContent = r.area
+  li.append(label, area)
   // The printed figure against what the modelled rectangles actually measure.
   li.title = `${r.original} · drawing ${r.area} · model ${roomArea(r).toFixed(1)} m²`
   li.addEventListener('click', () => {
@@ -198,6 +223,7 @@ ROOMS.filter((r) => r.area).forEach((r, i) => {
     floorMode = r.level
     for (const b of $('#floors').querySelectorAll('button')) b.classList.toggle('on', b.dataset.floor === r.level)
     applyVisibility()
+    writeUrl()
   })
   roomList.append(li)
 })
@@ -213,7 +239,11 @@ document.body.append(labelLayer)
 const labels = ROOMS.filter((r) => r.area).map((r) => {
   const el = document.createElement('div')
   el.className = 'room-label'
-  el.innerHTML = `<b>${r.name}</b><i>${r.area}</i>`
+  const strong = document.createElement('b')
+  strong.textContent = r.name
+  const em = document.createElement('i')
+  em.textContent = r.area
+  el.append(strong, em)
   labelLayer.append(el)
   const [cx, cy] = roomCentre(r)
   return {
@@ -226,6 +256,7 @@ const labels = ROOMS.filter((r) => r.area).map((r) => {
 let labelsOn = true
 $<HTMLInputElement>('#labels-on').addEventListener('change', (e) => {
   labelsOn = (e.target as HTMLInputElement).checked
+  writeUrl()
 })
 
 const projected = new THREE.Vector3()
@@ -259,8 +290,11 @@ viewer.onTick(() => {
 const levelsEl = $('#levels')
 for (const l of SPOT_LEVELS) {
   const li = document.createElement('li')
-  const v = (l.z >= 0 ? '+' : '−') + Math.abs(l.z).toFixed(2)
-  li.innerHTML = `<b>${v}</b><span>${l.note}</span>`
+  const v = document.createElement('b')
+  v.textContent = (l.z >= 0 ? '+' : '−') + Math.abs(l.z).toFixed(2)
+  const note = document.createElement('span')
+  note.textContent = l.note
+  li.append(v, note)
   levelsEl.append(li)
 }
 
@@ -307,9 +341,10 @@ if (params.get('roof') === '0') {
 applyVisibility()
 
 // `?cam=x,y,z&at=x,y,z` places the camera exactly, for linking to a specific view.
-const camParam = params.get('cam')?.split(',').map(Number)
+const rawCam = params.get('cam')?.split(',').map(Number)
+const camParam = rawCam?.length === 3 && rawCam.every(Number.isFinite) ? rawCam : undefined
 const atParam = params.get('at')?.split(',').map(Number)
-if (camParam?.length === 3 && camParam.every(Number.isFinite)) {
+if (camParam) {
   viewer.camera.position.set(camParam[0], camParam[1], camParam[2])
   if (atParam?.length === 3 && atParam.every(Number.isFinite)) {
     viewer.controls.target.set(atParam[0], atParam[1], atParam[2])
