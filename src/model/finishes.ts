@@ -133,7 +133,7 @@ export const DESIGN_IDEAS: Scheme = {
     pala: { color: '#313438', roughness: 0.6, metalness: 0.1 },
     parapet: { color: '#313438', roughness: 0.6, metalness: 0.1 },
     frame: { color: '#26292c', roughness: 0.38, metalness: 0.55 },
-    glass: { color: '#7f96a6', roughness: 0.05, metalness: 0.12, opacity: 0.3 },
+    glass: { color: '#66798a', roughness: 0.04, metalness: 0.28, opacity: 0.36 },
     roof: { color: '#a9a396', roughness: 1, metalness: 0, grain: 'gravel' },
     interiorWall: { color: '#f2efe9', roughness: 0.95, metalness: 0 },
     ceiling: { color: '#fbfaf7', roughness: 0.98, metalness: 0 },

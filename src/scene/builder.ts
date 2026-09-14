@@ -70,6 +70,8 @@ export interface HouseParts {
   garageDoor: GarageDoor
   /** The road, the footpath and the two gates. */
   street: StreetParts
+  /** Subdivide the windows the way the drawings do, or the way the reference renders do. */
+  setGlazingStyle(style: GlazingStyle): void
 }
 
 const box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d)
@@ -172,12 +174,33 @@ function buildWall(wall: Wall, lib: MaterialLibrary): THREE.Group {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Glazing: a frame around the reveal plus mullioned panes.
+// Glazing: a sash in the reveal, subdivided one of two ways.
+//
+// The drawings subdivide a window into panes of about a metre with a transom across the tall
+// openings. The reference renders do neither: they run two or three large panes to a sash, no
+// transom at all, and wrap the whole opening in a deep anthracite surround standing proud of
+// the render. Both are built; `setGlazingStyle` on HouseParts picks which one shows.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FRAME = 0.06
 
-function buildGlazing(wall: Wall, o: Opening, lib: MaterialLibrary): THREE.Group | null {
+/** The surround the renders put round every window: a wide face, bedded into the render. */
+const SURROUND = { face: 0.07, proud: 0.045, thick: 0.065 }
+
+export type GlazingStyle = 'drawn' | 'renders'
+
+/** Which way is out of the building, for this exterior wall. Mirrors `outwardFaceIndex`. */
+function outwardSign(wall: Wall): number {
+  if (wall.run === 'x') return wall.at < SIZE.depth / 2 ? -1 : 1
+  return wall.at < SIZE.width / 2 ? -1 : 1
+}
+
+function buildGlazing(
+  wall: Wall,
+  o: Opening,
+  lib: MaterialLibrary,
+  styles: { drawn: THREE.Object3D[]; renders: THREE.Object3D[] },
+): THREE.Group | null {
   // The garage door is a sectional door that opens, built in `exterior.ts`; everything this
   // function knows how to make is fixed in its reveal.
   if (o.kind === 'door' || o.kind === 'opening' || o.kind === 'garage') return null
@@ -195,6 +218,11 @@ function buildGlazing(wall: Wall, o: Opening, lib: MaterialLibrary): THREE.Group
   const depth = Math.min(wall.thickness * 0.55, 0.12)
   const mid = o.from + width / 2
   const cy = o.sill + height / 2
+  const out = outwardSign(wall)
+  // The sash used to sit on the wall's centre line, which put a 0.175 m reveal on both faces of
+  // a 0.35 m wall. A window in an insulated wall sits in its outer third: 0.03 m of outer
+  // reveal, the rest of the depth inside.
+  const set = Math.max(0, wall.thickness / 2 - depth / 2 - 0.03)
 
   const place = (
     lengthAlong: number,
@@ -203,13 +231,14 @@ function buildGlazing(wall: Wall, o: Opening, lib: MaterialLibrary): THREE.Group
     yCentre: number,
     m: THREE.Material,
     thick = depth,
+    across = set,
+    into: THREE.Object3D = g,
   ) => {
     const geo = wall.run === 'x' ? box(lengthAlong, h, thick) : box(thick, h, lengthAlong)
-    const x = wall.run === 'x' ? alongCentre : wall.at
-    const z = wall.run === 'x' ? wall.at : alongCentre
-    const mm = mesh(geo, m, x, yCentre, z)
+    const off = wall.at + out * across
+    const mm = mesh(geo, m, wall.run === 'x' ? alongCentre : off, yCentre, wall.run === 'x' ? off : alongCentre)
     mm.castShadow = false
-    g.add(mm)
+    into.add(mm)
   }
 
   // Outer frame
@@ -218,14 +247,45 @@ function buildGlazing(wall: Wall, o: Opening, lib: MaterialLibrary): THREE.Group
   place(FRAME, height, o.from + FRAME / 2, cy, frameMat)
   place(FRAME, height, o.to - FRAME / 2, cy, frameMat)
 
-  // Mullions: panes of at most ~1.10 m.
-  const panes = Math.max(1, Math.round(width / 1.1))
-  for (let i = 1; i < panes; i++) {
-    place(FRAME * 0.7, height - FRAME * 2, o.from + (width * i) / panes, cy, frameMat)
+  /** Mullions dividing the opening into `n` panes, in whichever bar set is asked for. */
+  const mullions = (n: number, thick: number, into: THREE.Object3D) => {
+    for (let i = 1; i < n; i++) {
+      place(thick, height - FRAME * 2, o.from + (width * i) / n, cy, frameMat, depth, set, into)
+    }
   }
+
+  const drawn = new THREE.Group()
+  drawn.name = 'glazing-drawn'
+  mullions(Math.max(1, Math.round(width / 1.1)), FRAME * 0.7, drawn)
   // Transom, where the elevations show one: 0.95 m up on the tall openings.
-  const hasTransom = height > 1.6
-  if (hasTransom) place(width - FRAME * 2, FRAME * 0.7, mid, o.sill + 0.95, frameMat)
+  if (height > 1.6) {
+    place(width - FRAME * 2, FRAME * 0.7, mid, o.sill + 0.95, frameMat, depth, set, drawn)
+  }
+
+  const renders = new THREE.Group()
+  renders.name = 'glazing-renders'
+  mullions(Math.max(1, Math.ceil(width / 1.6)), FRAME * 0.55, renders)
+  // The surround goes round windows and full-height glazing only. The front door sits in a
+  // field of timber slats in the renders, not in a frame, and the garage door has its own.
+  if (o.kind === 'window' || o.kind === 'french') {
+    const b = SURROUND.face
+    const across = wall.thickness / 2 + SURROUND.proud - SURROUND.thick / 2
+    // Only a window with a real sill gets a band under it; on full-height glazing it would be
+    // buried in the terrace.
+    const lo = o.sill > floorLevel + 0.05 ? o.sill - b : o.sill
+    const hi = o.head + b
+    // The head and sill bands stop at the reveal and the jambs carry the corners, so no two
+    // faces of the surround end up coplanar and fighting.
+    place(width, b, mid, o.head + b / 2, frameMat, SURROUND.thick, across, renders)
+    if (lo < o.sill) place(width, b, mid, o.sill - b / 2, frameMat, SURROUND.thick, across, renders)
+    for (const at of [o.from - b / 2, o.to + b / 2]) {
+      place(b, hi - lo, at, (lo + hi) / 2, frameMat, SURROUND.thick, across, renders)
+    }
+  }
+
+  g.add(drawn, renders)
+  styles.drawn.push(drawn)
+  styles.renders.push(renders)
 
   // Glass, inset behind the frame
   place(width - FRAME * 2, height - FRAME * 2, mid, cy, glassMat, depth * 0.35)
@@ -776,17 +836,18 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   glazingCave.name = 'glazing-cave'
   glazingGround.name = 'glazing-ground'
 
+  const styles = { drawn: [] as THREE.Object3D[], renders: [] as THREE.Object3D[] }
   for (const w of CAVE_WALLS) {
     cave.add(buildWall(w, lib))
     for (const o of w.openings ?? []) {
-      const gz = buildGlazing(w, o, lib)
+      const gz = buildGlazing(w, o, lib, styles)
       if (gz) glazingCave.add(gz)
     }
   }
   for (const w of GROUND_WALLS) {
     ground.add(buildWall(w, lib))
     for (const o of w.openings ?? []) {
-      const gz = buildGlazing(w, o, lib)
+      const gz = buildGlazing(w, o, lib, styles)
       if (gz) glazingGround.add(gz)
     }
   }
@@ -848,5 +909,9 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
     planting,
     garageDoor: exterior.garage,
     street,
+    setGlazingStyle(style) {
+      for (const o of styles.drawn) o.visible = style === 'drawn'
+      for (const o of styles.renders) o.visible = style === 'renders'
+    },
   }
 }

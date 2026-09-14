@@ -145,10 +145,13 @@ export function slatPanel(face: Face, from: number, to: number, base: number, to
  */
 const SLAT_PANELS: Array<{ face: Face; from: number; to: number; base: number; top: number }> = [
   { face: 'front', from: 3.95, to: 4.353, base: ENTRANCE.platform.z, top: LEVELS.palaBottom },
-  { face: 'front', from: 5.353, to: 5.653, base: ENTRANCE.platform.z, top: LEVELS.palaBottom },
-  { face: 'front', from: 6.653, to: 7.15, base: ENTRANCE.platform.z, top: LEVELS.palaBottom },
-  // −1.711 is the spot level the drawings give for the rear yard.
-  { face: 'rear', from: 5.25, to: 6.2, base: -1.711, top: LEVELS.palaBottom },
+  // These three stop short of the window surrounds either side of them, which stand 0.07
+  // proud of each reveal: the hall's glazing runs 5.653…6.653.
+  { face: 'front', from: 5.353, to: 5.583, base: ENTRANCE.platform.z, top: LEVELS.palaBottom },
+  { face: 'front', from: 6.723, to: 7.15, base: ENTRANCE.platform.z, top: LEVELS.palaBottom },
+  // −1.711 is the spot level the drawings give for the rear yard. The strip stops at 6.10,
+  // clear of the surround on the ground-floor opening that starts at 6.203.
+  { face: 'rear', from: 5.25, to: 6.1, base: -1.711, top: LEVELS.palaBottom },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -272,14 +275,17 @@ function buildUplighters(lib: MaterialLibrary): THREE.Group {
 // Glass Juliet balustrades
 // ─────────────────────────────────────────────────────────────────────────────
 
-const JULIET = { height: 1.05, proud: 0.08, rail: 0.045, reveal: 0.03, glass: 0.02 }
+// Standing well clear of the window, and lapping over the surround rather than tucked inside
+// the reveal: at 0.08 proud and inset, the rail landed on the glass halfway up the opening and
+// the whole thing read as a transom rather than as a balustrade in front of it.
+const JULIET = { height: 1.05, proud: 0.14, rail: 0.05, lap: 0.05, glass: 0.02 }
 
 function buildJuliet(face: Face, o: Opening, lib: MaterialLibrary): THREE.Group {
   const g = new THREE.Group()
   g.name = `juliet-${face}-${o.from.toFixed(2)}`
   const frame = lib.get('frame')
-  const from = o.from + JULIET.reveal
-  const to = o.to - JULIET.reveal
+  const from = o.from - JULIET.lap
+  const to = o.to + JULIET.lap
   const top = o.sill + JULIET.height
 
   const pane = onFace(face, from, to, o.sill + 0.02, top - JULIET.rail, JULIET.glass, JULIET.proud, lib.get('glass'))
@@ -290,9 +296,9 @@ function buildJuliet(face: Face, o: Opening, lib: MaterialLibrary): THREE.Group 
   // length, which is what makes the balustrade read as frameless.
   g.add(onFace(face, from - 0.02, to + 0.02, top - JULIET.rail, top, 0.05, JULIET.proud + 0.015, frame))
 
-  // A fixing back to each reveal.
-  for (const at of [from + 0.025, to - 0.025]) {
-    g.add(onFace(face, at - 0.025, at + 0.025, o.sill + 0.24, o.sill + 0.46, 0.06, JULIET.proud + 0.01, frame))
+  // A fixing bridging the whole way back to the wall, so the glass reads as held off it.
+  for (const at of [from + 0.03, to - 0.03]) {
+    g.add(onFace(face, at - 0.03, at + 0.03, o.sill + 0.24, o.sill + 0.46, JULIET.proud, JULIET.proud, frame))
   }
   return g
 }

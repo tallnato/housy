@@ -171,6 +171,7 @@ function applyDesign() {
   parts.furnitureGround.visible = designOn
   parts.exterior.visible = designOn
   parts.planting.visible = designOn
+  parts.setGlazingStyle(designOn ? 'renders' : 'drawn')
 }
 
 const designToggle = $<HTMLInputElement>('#design-on')
