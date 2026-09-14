@@ -5,7 +5,7 @@ import { SCHEMES, schemeById, AS_SPECIFIED, DESIGN_IDEAS } from './model/finishe
 import { MaterialLibrary } from './scene/materials'
 import { buildHouse } from './scene/builder'
 import { SPOT_LEVELS } from './model/site'
-import { Viewer } from './scene/viewer'
+import { ENTRANCE_X, Viewer } from './scene/viewer'
 import { Car } from './scene/vehicle'
 import { Arrival } from './scene/arrival'
 import { PEOPLE, Person, personById } from './scene/people'
@@ -321,7 +321,7 @@ function setPerson(id: string | null) {
     // Where walk mode starts from when you come in off an orbit view, so the figure is
     // standing exactly where you would take over from it. Swapping who you are mid-walk must
     // not teleport you back out to the terrace, though.
-    if (viewer.cameraMode !== 'walk') viewer.setWalkStand(5.5, SIZE.depth + 4.5, 0)
+    if (viewer.cameraMode !== 'walk') viewer.setWalkStand(ENTRANCE_X, SIZE.depth + 4.5, 0)
   }
   viewer.setEyeHeight(person?.spec.eyeHeight ?? defaultEye)
   paintPeople()

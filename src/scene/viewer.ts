@@ -8,6 +8,9 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { LEVELS, SIZE } from '../model/house'
 import { groundAt } from '../model/site'
 
+/** Centre line of the front door, which is the leaf at x 4.353…5.353 in the front wall. */
+export const ENTRANCE_X = 4.853
+
 /** Walk right through anything a parent marked passable — doorways, full-height glazing. */
 function passable(o: THREE.Object3D | null): boolean {
   for (let n = o; n; n = n.parent) if (n.userData?.passable) return true
@@ -146,8 +149,10 @@ export class Viewer {
         this.walkPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1))
       } else {
         // Coming in from an orbit view: start on the path in front of the entrance, facing it.
-        // forward is (−sin yaw, 0, −cos yaw), so yaw 0 looks along −z — towards the house.
-        this.walkPos.set(5.5, 0, SIZE.depth + 4.5)
+        // forward is (−sin yaw, 0, −cos yaw), so yaw 0 looks along −z — towards the house. x is
+        // the centre line of the front door, not of the recess, or you walk straight into the
+        // pier that splits it.
+        this.walkPos.set(ENTRANCE_X, 0, SIZE.depth + 4.5)
         this.walkYaw = 0
         this.walkPitch = -0.05
       }
