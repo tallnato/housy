@@ -241,12 +241,14 @@ function barStool(p: Place, x: number, y: number) {
   p.rod(BLACK_METAL, 0.013, [x - 0.14, y, 0.24], [x + 0.14, y, 0.24])
 }
 
-/** Upholstered dining chair. `back` is +1 or −1: which side of x the backrest stands on. */
-function diningChair(p: Place, x: number, y: number, back: 1 | -1) {
+/** Upholstered dining chair. The seat is square; `axis` and `back` place the backrest. */
+function diningChair(p: Place, x: number, y: number, axis: 'x' | 'y', back: 1 | -1) {
   const s = 0.23
   p.box(TAUPE, x - s, y - s, x + s, y + s, 0.42, 0.48)
-  const bx = x + back * (s - 0.035)
-  p.box(TAUPE, bx - 0.035, y - s + 0.02, bx + 0.035, y + s - 0.02, 0.48, 0.94)
+  const off = back * (s - 0.035)
+  const [bx, by] = axis === 'x' ? [x + off, y] : [x, y + off]
+  const [hx, hy] = axis === 'x' ? [0.035, s - 0.02] : [s - 0.02, 0.035]
+  p.box(TAUPE, bx - hx, by - hy, bx + hx, by + hy, 0.48, 0.94)
   p.many(CHAIR_LEG, BLACK_METAL, [
     [x - 0.19, y - 0.19, 0.22],
     [x + 0.19, y - 0.19, 0.22],
@@ -479,18 +481,21 @@ function buildLiving(p: Place) {
   p.box(WOOL, 0.903, 0.8, 4.453, 4.6, 0, 0.014)
   plant(p, 4.953, 0.85, 1.5)
 
-  // ── Dining for six, set east so the way through to the kitchen stays clear ──
-  p.box(WALNUT, 3.625, 5.4, 4.575, 7.2, 0.72, 0.76)
+  // ── Dining for six, turned across the room and brought in off the corner ──
+  // Sitting the long sides north and south leaves both ways out of this end open: the 1.00 m
+  // gap into the kitchen between the peninsula and g-p11, and the passage to the hall east of
+  // x 3.953. It also puts the table on the room's own centre line rather than against a wall.
+  p.box(WALNUT, 2.05, 5.375, 3.85, 6.325, 0.72, 0.76)
   p.many(box(0.07, 0.72, 0.07), CHARCOAL, [
-    [3.72, 5.5, 0.36],
-    [4.48, 5.5, 0.36],
-    [3.72, 7.1, 0.36],
-    [4.48, 7.1, 0.36],
+    [2.15, 5.47, 0.36],
+    [3.75, 5.47, 0.36],
+    [2.15, 6.23, 0.36],
+    [3.75, 6.23, 0.36],
   ])
-  for (const y of [5.7, 6.3, 6.9]) {
-    diningChair(p, 3.32, y, -1)
-    diningChair(p, 4.88, y, 1)
-    pendant(p, 4.1, y, 1.98)
+  for (const x of [2.35, 2.95, 3.55]) {
+    diningChair(p, x, 5.07, 'y', -1)
+    diningChair(p, x, 6.63, 'y', 1)
+    pendant(p, x, 5.85, 1.98)
   }
 }
 
