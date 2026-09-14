@@ -60,7 +60,6 @@ const SCREEN = matt('#0d0e11', 0.16)
 const MIRROR = new THREE.MeshStandardMaterial({ color: '#c9d3d8', roughness: 0.05, metalness: 0.95 })
 const FOLIAGE = matt('#4c6b41', 0.9)
 const POT = matt('#4c4a46', 0.8)
-const WHITE_LACQUER = matt('#f2f1ee', 0.42)
 /** Warm strips, valances and cove lighting. */
 const WARM = lit('#ffcb8e', 2.4)
 const FLAME = lit('#ff8b33', 3.4)
@@ -644,23 +643,8 @@ function buildBedrooms(p: Place) {
   p.box(WOOL, sx0 + 1.0, 7.0, sx1 - 0.06, 9.7, 0, 0.014)
   plant(p, sx1 - 0.5, 9.72, 1.35)
 
-  // ── The office corner, in the suite's return ──
-  const [rx0, ry0, , ry1] = SUITE[1]
-  p.box(WHITE_LACQUER, rx0, ry0 + 0.05, rx0 + 0.44, ry1 - 0.01, 0.72, 0.76)
-  p.box(WHITE_LACQUER, rx0 + 0.02, ry0 + 0.09, rx0 + 0.4, ry0 + 0.47, 0, 0.72)
-  p.box(WHITE_LACQUER, rx0 + 0.39, ry1 - 0.06, rx0 + 0.43, ry1 - 0.02, 0, 0.72)
-  p.box(SCREEN, rx0 + 0.04, ry0 + 0.17, rx0 + 0.07, ry0 + 0.7, 0.85, 1.18)
-  p.box(INK, rx0 + 0.07, ry0 + 0.41, rx0 + 0.11, ry0 + 0.46, 0.76, 0.88)
-  p.box(INK, rx0 + 0.04, ry0 + 0.33, rx0 + 0.25, ry0 + 0.54, 0.76, 0.78)
-  // A linear light on the wall over it, the one fitting the render shows in this corner.
-  p.box(INK, rx0 + 0.01, ry0 + 0.25, rx0 + 0.35, ry0 + 0.31, 1.56, 1.6)
-  p.glow(WARM, rx0 + 0.02, ry0 + 0.25, rx0 + 0.34, ry0 + 0.31, 1.53, 1.56)
-  // The chair is pulled back past the return's mouth: 1.10 m of alcove will not take a desk,
-  // a chair and the door swing at once, and the door has to win.
-  p.box(CHARCOAL, 10.49, 5.79, 10.95, 6.25, 0.44, 0.5)
-  p.box(CHARCOAL, 10.9, 5.82, 10.96, 6.22, 0.5, 1.02)
-  p.at(new THREE.CylinderGeometry(0.04, 0.04, 0.34, 10), BLACK_METAL, 10.72, 6.02, 0.27)
-  p.at(new THREE.CylinderGeometry(0.28, 0.26, 0.05, 16), BLACK_METAL, 10.72, 6.02, 0.05)
+  // The return is left clear. It is 1.10 m wide with the suite door opening through it, and
+  // anything standing in it is either in the door swing or in the way of it.
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
