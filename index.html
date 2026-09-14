@@ -3,93 +3,116 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>House · 3D</title>
-    <meta name="description" content="Interactive 3D model of a two-storey house, built from its architectural drawings." />
+    <title data-i18n="ui.docTitle">House · 3D</title>
+    <meta
+      name="description"
+      data-i18n-attr="content:ui.docDescription"
+      content="Interactive 3D model of a two-storey house, built from its architectural drawings."
+    />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <div id="boot">building the model…</div>
+    <div id="boot" data-i18n="ui.boot">building the model…</div>
     <canvas id="view"></canvas>
 
     <header class="topbar">
       <div class="title">
-        <strong>House</strong>
-        <span>single-family house · 147 m² footprint</span>
+        <strong data-i18n="ui.title">House</strong>
+        <span data-i18n="ui.subtitle">single-family house · 147 m² footprint</span>
       </div>
-      <button id="help-toggle" class="ghost" type="button" aria-label="About">?</button>
-      <button id="panel-toggle" class="ghost only-narrow" type="button" aria-label="Panel">☰</button>
+      <div class="seg lang" id="lang" role="group" data-i18n-attr="aria-label:ui.language" aria-label="Language"></div>
+      <button id="help-toggle" class="ghost" type="button" data-i18n-attr="aria-label:ui.about" aria-label="About">
+        ?
+      </button>
+      <button
+        id="panel-toggle"
+        class="ghost only-narrow"
+        type="button"
+        data-i18n-attr="aria-label:ui.panel"
+        aria-label="Panel"
+      >
+        ☰
+      </button>
     </header>
 
     <aside class="panel" id="panel">
       <section>
-        <h2>Floors</h2>
+        <h2 data-i18n="ui.floors">Floors</h2>
         <div class="seg" id="floors" role="group">
-          <button data-floor="all" class="on" type="button">Both</button>
-          <button data-floor="cave" type="button">Basement</button>
-          <button data-floor="ground" type="button">Ground</button>
+          <button data-floor="all" class="on" type="button" data-i18n="ui.floorsAll">Both</button>
+          <button data-floor="cave" type="button" data-i18n="ui.floorCave">Basement</button>
+          <button data-floor="ground" type="button" data-i18n="ui.floorGround">Ground</button>
         </div>
-        <label class="check"><input type="checkbox" id="roof-on" checked /> <span>Roof</span></label>
-        <label class="check"><input type="checkbox" id="site-on" checked /> <span>Site and walls</span></label>
-        <label class="check"><input type="checkbox" id="labels-on" checked /> <span>Room names</span></label>
+        <label class="check">
+          <input type="checkbox" id="roof-on" checked /> <span data-i18n="ui.roof">Roof</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="site-on" checked /> <span data-i18n="ui.site">Site and walls</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="labels-on" checked /> <span data-i18n="ui.labels">Room names</span>
+        </label>
       </section>
 
       <section>
-        <h2>View</h2>
+        <h2 data-i18n="ui.view">View</h2>
         <div class="grid-views" id="views">
-          <button data-view="axo" type="button">Axonometric</button>
-          <button data-view="principal" type="button">Front</button>
-          <button data-view="posterior" type="button">Rear</button>
-          <button data-view="esquerdo" type="button">Left side</button>
-          <button data-view="direito" type="button">Right side</button>
-          <button data-view="topo" type="button">Plan</button>
+          <button data-view="axo" type="button" data-i18n="ui.viewAxo">Axonometric</button>
+          <button data-view="principal" type="button" data-i18n="ui.viewFront">Front</button>
+          <button data-view="posterior" type="button" data-i18n="ui.viewRear">Rear</button>
+          <button data-view="esquerdo" type="button" data-i18n="ui.viewLeft">Left side</button>
+          <button data-view="direito" type="button" data-i18n="ui.viewRight">Right side</button>
+          <button data-view="topo" type="button" data-i18n="ui.viewPlan">Plan</button>
         </div>
-        <button id="walk" class="wide" type="button">Walk through the house</button>
+        <button id="walk" class="wide" type="button" data-i18n="ui.walk">Walk through the house</button>
       </section>
 
       <section>
-        <h2>Finishes</h2>
+        <h2 data-i18n="ui.finishes">Finishes</h2>
         <div id="schemes" class="schemes"></div>
         <p class="note" id="scheme-note"></p>
       </section>
 
       <section>
-        <h2>Areas</h2>
+        <h2 data-i18n="ui.areas">Areas</h2>
         <dl id="schedule" class="schedule"></dl>
       </section>
 
       <section>
-        <h2>Rooms</h2>
+        <h2 data-i18n="ui.rooms">Rooms</h2>
         <ul id="rooms" class="rooms"></ul>
       </section>
     </aside>
 
     <div class="hud" id="hud" hidden>
-      <strong>Walking</strong>
-      <span>WASD to move · mouse to look · Shift to run · Esc to leave</span>
+      <strong data-i18n="ui.hudWalking">Walking</strong>
+      <span data-i18n="ui.hudKeys">WASD to move · mouse to look · Shift to run · Esc to leave</span>
     </div>
 
     <dialog id="help">
-      <h2>About this model</h2>
-      <p>
+      <h2 data-i18n="ui.aboutTitle">About this model</h2>
+      <p data-i18n="ui.aboutIntro">
         Generated from the architect's drawing set — plans, sections and elevations at 1:100.
         Every dimension was read from the vector geometry inside the drawings rather than
         estimated off the printed image.
       </p>
       <ul>
-        <li>Footprint 14.005 × 10.501 m · 2.60 m clear height on both floors</li>
-        <li>Basement at −1.61 · ground floor at +1.54 · parapet at +4.99</li>
-        <li>External walls 0.35 m · partitions 0.10 m</li>
+        <li data-i18n="ui.aboutDims">Footprint 14.005 × 10.501 m · 2.60 m clear height on both floors</li>
+        <li data-i18n="ui.aboutLevels">Basement at −1.61 · ground floor at +1.54 · parapet at +4.99</li>
+        <li data-i18n="ui.aboutWalls">External walls 0.35 m · partitions 0.10 m</li>
       </ul>
-      <h3>Ground levels</h3>
-      <p>The terrain is reconstructed from the levels dimensioned on the sections and elevations:</p>
+      <h3 data-i18n="ui.groundLevels">Ground levels</h3>
+      <p data-i18n="ui.groundLevelsIntro">
+        The terrain is reconstructed from the levels dimensioned on the sections and elevations:
+      </p>
       <ul class="levels" id="levels"></ul>
-      <p class="note">
+      <p class="note" data-i18n="ui.aboutNote">
         The drawings carry no north point, so the sun sits at a fixed angle chosen to read the
         massing rather than a real orientation. The model holds no location information — no
         address, no streets, no coordinates — and the plot outline is stored only as offsets
         from the house's own corner.
       </p>
-      <form method="dialog"><button type="submit">Close</button></form>
+      <form method="dialog"><button type="submit" data-i18n="ui.close">Close</button></form>
     </dialog>
 
     <script type="module" src="/src/main.ts"></script>

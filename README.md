@@ -23,6 +23,8 @@ and published as a static site.
   inspiration-image feature plugs into later.
 - **Read it.** Room names and areas float over the model, and the drawing's area schedule is
   in the panel.
+- **In two languages.** The house is Portuguese and so are its drawings; the interface reads
+  in Portuguese or English, and `?lang=pt` carries the choice in a link.
 
 Pick a floor and the roof and everything above it peels away:
 
@@ -96,6 +98,7 @@ The viewer keeps its state in the URL, so any view is a link you can send someon
 | `roof` | `0` | take the roof off |
 | `scheme` | `as-specified` `warm-minimal` `dark-contrast` `white-model` | finishes |
 | `ui` | `0` | hide the chrome, for embedding |
+| `lang` | `en` `pt` | interface language |
 | `labels` | `0` | hide the room names |
 | `cam` / `at` | `x,y,z` | place the camera and its target exactly |
 
@@ -119,6 +122,7 @@ Deploys itself: pushing to `main` runs `.github/workflows/deploy.yml`, which bui
 
 ```
 src/
+  i18n.ts         the interface in English and Portuguese
   model/
     house.ts      the building as data — levels, walls, openings, rooms
     site.ts       plot outline and the ground surface (relative coordinates only)

@@ -91,6 +91,27 @@ body {
   background: rgba(40, 46, 56, 0.9);
 }
 
+.topbar .lang {
+  pointer-events: auto;
+  margin-left: auto;
+  padding: 2px;
+  border: 1px solid var(--panel-line);
+  background: rgba(18, 21, 26, 0.7);
+}
+
+.topbar .lang button {
+  min-width: 30px;
+  padding: 4px 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+/* The picker has already taken the free space; the round buttons just follow it. */
+.topbar .lang ~ .ghost {
+  margin-left: 0;
+}
+
 .only-narrow {
   display: none;
   margin-left: 0;

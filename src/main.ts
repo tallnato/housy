@@ -6,15 +6,24 @@ import { MaterialLibrary } from './scene/materials'
 import { buildHouse } from './scene/builder'
 import { SPOT_LEVELS } from './model/site'
 import { Viewer } from './scene/viewer'
+import {
+  LANGS,
+  applyStatic,
+  initLang,
+  lang,
+  onLangChange,
+  setLang,
+  t,
+  tLevel,
+  tNumber,
+  tRoom,
+  tRoomTip,
+  tSchedule,
+  tScheme,
+  tSpot,
+} from './i18n'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
-
-const canvas = $<HTMLCanvasElement>('#view')
-const viewer = new Viewer(canvas)
-
-const lib = new MaterialLibrary(AS_SPECIFIED)
-const parts = buildHouse(lib)
-viewer.scene.add(parts.root)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shareable state. `?view=posterior&floor=cave&scheme=dark-contrast` sets the
@@ -22,6 +31,18 @@ viewer.scene.add(parts.root)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const params = new URLSearchParams(location.search)
+
+// Before anything renders, so the panel is never built in one language and read in another.
+initLang(params.get('lang'))
+let langInUrl = params.has('lang')
+applyStatic()
+
+const canvas = $<HTMLCanvasElement>('#view')
+const viewer = new Viewer(canvas)
+
+const lib = new MaterialLibrary(AS_SPECIFIED)
+const parts = buildHouse(lib)
+viewer.scene.add(parts.root)
 
 /** Parameters that are applied once at load and are not controls; carried through verbatim. */
 const PASSTHROUGH = ['view', 'cam', 'at', 'ui'] as const
@@ -32,6 +53,7 @@ function writeUrl() {
     const v = params.get(key)
     if (v !== null) p.set(key, v)
   }
+  if (langInUrl) p.set('lang', lang())
   if (!labelsOn) p.set('labels', '0')
   if (floorMode !== 'all') p.set('floor', floorMode)
   if (!roofOn) p.set('roof', '0')
@@ -39,6 +61,38 @@ function writeUrl() {
   const q = p.toString()
   history.replaceState(null, '', q ? `?${q}` : location.pathname)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Language
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Everything the panel builds from data has to be re-read when the language changes, so each
+// section registers what it wrote rather than being rebuilt — the room list carries click
+// handlers, and throwing the elements away would throw those away with them.
+const retranslators: Array<() => void> = []
+
+const langEl = $('#lang')
+for (const l of LANGS) {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.dataset.lang = l.id
+  b.textContent = l.label
+  b.classList.toggle('on', l.id === lang())
+  langEl.append(b)
+}
+langEl.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button[data-lang]') as HTMLButtonElement | null
+  if (!btn || btn.dataset.lang === lang()) return
+  langInUrl = true
+  setLang(btn.dataset.lang as 'en' | 'pt')
+})
+
+onLangChange((l) => {
+  for (const b of langEl.querySelectorAll('button')) b.classList.toggle('on', b.dataset.lang === l)
+  applyStatic()
+  for (const fn of retranslators) fn()
+  writeUrl()
+})
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Floors
@@ -151,12 +205,15 @@ walkBtn.addEventListener('click', () => {
 
 // flyTo() and losing pointer lock both drop the viewer back to orbit on their own, so the
 // button and the HUD follow the viewer rather than the other way round.
-viewer.onModeChange((mode) => {
-  const on = mode === 'walk'
+function paintWalkButton() {
+  const on = viewer.cameraMode === 'walk'
   walkBtn.classList.toggle('on', on)
-  walkBtn.textContent = on ? 'Leave walk mode' : 'Walk through the house'
+  walkBtn.textContent = on ? t('ui.walkLeave') : t('ui.walk')
   hud.hidden = !on
-})
+}
+viewer.onModeChange(paintWalkButton)
+retranslators.push(paintWalkButton)
+
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && viewer.cameraMode === 'walk') setWalk(false)
 })
@@ -166,6 +223,9 @@ addEventListener('keydown', (e) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const schemesEl = $('#schemes')
+const schemeNote = $('#scheme-note')
+const schemeLabels: Array<{ id: string; label: Text }> = []
+
 for (const s of SCHEMES) {
   const b = document.createElement('button')
   b.type = 'button'
@@ -178,20 +238,26 @@ for (const s of SCHEMES) {
     i.style.background = s.surfaces[key].color
     sw.append(i)
   }
-  b.append(sw, document.createTextNode(s.name))
+  const label = document.createTextNode(tScheme(s.id, 'name', s.name))
+  b.append(sw, label)
   schemesEl.append(b)
+  schemeLabels.push({ id: s.id, label })
 }
-const schemeNote = $('#scheme-note')
-schemeNote.textContent = AS_SPECIFIED.note
+schemeNote.textContent = tScheme(AS_SPECIFIED.id, 'note', AS_SPECIFIED.note)
 
 schemesEl.addEventListener('click', (e) => {
   const btn = (e.target as HTMLElement).closest('button[data-scheme]') as HTMLButtonElement | null
   if (!btn) return
   const scheme = schemeById(btn.dataset.scheme!)
   lib.apply(scheme)
-  schemeNote.textContent = scheme.note
+  schemeNote.textContent = tScheme(scheme.id, 'note', scheme.note)
   for (const b of schemesEl.querySelectorAll('button')) b.classList.toggle('on', b === btn)
   writeUrl()
+})
+
+retranslators.push(() => {
+  for (const { id, label } of schemeLabels) label.data = tScheme(id, 'name', schemeById(id).name)
+  schemeNote.textContent = tScheme(lib.current.id, 'note', lib.current.note)
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,41 +265,37 @@ schemesEl.addEventListener('click', (e) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const dl = $('#schedule')
-for (const row of SCHEDULE) {
+const scheduleRows = SCHEDULE.map((row) => {
   const dt = document.createElement('dt')
-  dt.textContent = row.label
   const dd = document.createElement('dd')
-  dd.textContent = row.value
   dl.append(dt, dd)
-}
+  return { row, dt, dd }
+})
 
 const roomList = $('#rooms')
-ROOMS.filter((r) => r.area).forEach((r, i) => {
+const listedRooms = ROOMS.filter((r) => r.area)
+const roomRows = listedRooms.map((r) => {
   const li = document.createElement('li')
-  li.dataset.idx = String(i)
   const label = document.createElement('span')
-  label.append(r.name + ' ')
+  const name = document.createTextNode('')
   const lvl = document.createElement('span')
   lvl.className = 'lvl'
-  lvl.textContent = r.level === 'cave' ? 'basement' : 'ground'
-  label.append(lvl)
+  label.append(name, ' ', lvl)
   const area = document.createElement('span')
   area.className = 'area'
-  area.textContent = r.area
   li.append(label, area)
-  // The printed figure against what the modelled rectangles actually measure.
-  li.title = `${r.original} · drawing ${r.area} · model ${roomArea(r).toFixed(1)} m²`
   li.addEventListener('click', () => {
     const y = (r.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor) + 1.4
     const [cx, cy] = roomCentre(r)
-    const t = new THREE.Vector3(cx, y, cy)
-    viewer.flyTo(t.clone().add(new THREE.Vector3(-9, 11, 12)), t)
+    const target = new THREE.Vector3(cx, y, cy)
+    viewer.flyTo(target.clone().add(new THREE.Vector3(-9, 11, 12)), target)
     floorMode = r.level
     for (const b of $('#floors').querySelectorAll('button')) b.classList.toggle('on', b.dataset.floor === r.level)
     applyVisibility()
     writeUrl()
   })
   roomList.append(li)
+  return { room: r, li, name, lvl, area }
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -244,22 +306,59 @@ const labelLayer = document.createElement('div')
 labelLayer.id = 'labels'
 document.body.append(labelLayer)
 
-const labels = ROOMS.filter((r) => r.area).map((r) => {
+const labels = listedRooms.map((r) => {
   const el = document.createElement('div')
   el.className = 'room-label'
   const strong = document.createElement('b')
-  strong.textContent = r.name
   const em = document.createElement('i')
-  em.textContent = r.area
   el.append(strong, em)
   labelLayer.append(el)
   const [cx, cy] = roomCentre(r)
   return {
     el,
+    strong,
+    em,
     room: r,
     pos: new THREE.Vector3(cx, (r.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor) + 1.2, cy),
   }
 })
+
+// The spot levels the ground surface was reconstructed from, listed as the evidence.
+const levelsEl = $('#levels')
+const levelRows = SPOT_LEVELS.map((l) => {
+  const li = document.createElement('li')
+  const v = document.createElement('b')
+  v.textContent = (l.z >= 0 ? '+' : '−') + Math.abs(l.z).toFixed(2)
+  const note = document.createElement('span')
+  li.append(v, note)
+  levelsEl.append(li)
+  return { spot: l, v, note }
+})
+
+/** Everything the data files supply, said in the current language. */
+function paintData() {
+  for (const { row, dt, dd } of scheduleRows) {
+    dt.textContent = tSchedule(row.label)
+    dd.textContent = tNumber(row.value)
+  }
+  for (const { room, li, name, lvl, area } of roomRows) {
+    name.data = tRoom(room.name)
+    lvl.textContent = tLevel(room.level)
+    area.textContent = tNumber(room.area)
+    // The printed figure against what the modelled rectangles actually measure.
+    li.title = tRoomTip(room.original, room.area, roomArea(room))
+  }
+  for (const l of labels) {
+    l.strong.textContent = tRoom(l.room.name)
+    l.em.textContent = tNumber(l.room.area)
+  }
+  for (const { spot, v, note } of levelRows) {
+    v.textContent = tNumber((spot.z >= 0 ? '+' : '−') + Math.abs(spot.z).toFixed(2))
+    note.textContent = tSpot(spot.note)
+  }
+}
+paintData()
+retranslators.push(paintData)
 
 let labelsOn = true
 $<HTMLInputElement>('#labels-on').addEventListener('change', (e) => {
@@ -293,18 +392,6 @@ viewer.onTick(() => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Chrome
 // ─────────────────────────────────────────────────────────────────────────────
-
-// The spot levels the ground surface was reconstructed from, listed as the evidence.
-const levelsEl = $('#levels')
-for (const l of SPOT_LEVELS) {
-  const li = document.createElement('li')
-  const v = document.createElement('b')
-  v.textContent = (l.z >= 0 ? '+' : '−') + Math.abs(l.z).toFixed(2)
-  const note = document.createElement('span')
-  note.textContent = l.note
-  li.append(v, note)
-  levelsEl.append(li)
-}
 
 const help = $<HTMLDialogElement>('#help')
 $('#help-toggle').addEventListener('click', () => help.showModal())
@@ -375,6 +462,7 @@ if (!camParam && wantedView && VIEWS[wantedView]) {
   lookDownOn(wantedFloor)
 }
 
+paintWalkButton()
 writeUrl()
 
 // One frame of geometry is up — take the splash away and drop it from the DOM.
