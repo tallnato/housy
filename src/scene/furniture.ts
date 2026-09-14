@@ -389,9 +389,12 @@ function buildKitchen(p: Place) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function buildLiving(p: Place) {
-  const back = SALA[2] // face of the g-p1 partition, x = 5.453
-  const face = back - 0.35
-  // The joinery stops short of both ends of the partition, which only runs y 0.35 → 3.95.
+  // The media wall is on the left flank and the sofa backs onto the g-p1 partition opposite:
+  // you come in from the kitchen end with the rear glazing on your right.
+  const back = SALA[0] // face of the left flank wall, x = 0.35
+  const face = back + 0.35
+  // The joinery stops short of both ends of its run. The flank wall's only window starts at
+  // y 4.751, so nothing here fouls it.
   const j0 = 0.5
   const j1 = 3.85
   // Recess opening, and the fireplace slot inside the band below it.
@@ -400,50 +403,52 @@ function buildLiving(p: Place) {
   const f0 = 1.55
   const f1 = 3.25
 
-  p.box(CHARCOAL, face, j0, back, r0, 0, CLEAR)
-  p.box(CHARCOAL, face, r1, back, j1, 0, CLEAR)
-  p.box(CHARCOAL, face, r0, back, r1, 2.3, CLEAR)
-  p.box(CHARCOAL, face, r0, back, f0, 0, 0.95)
-  p.box(CHARCOAL, face, f1, back, r1, 0, 0.95)
-  p.box(CHARCOAL, face, f0, back, f1, 0, 0.38)
-  p.box(CHARCOAL, face, f0, back, f1, 0.64, 0.95)
+  p.box(CHARCOAL, back, j0, face, r0, 0, CLEAR)
+  p.box(CHARCOAL, back, r1, face, j1, 0, CLEAR)
+  p.box(CHARCOAL, back, r0, face, r1, 2.3, CLEAR)
+  p.box(CHARCOAL, back, r0, face, f0, 0, 0.95)
+  p.box(CHARCOAL, back, f1, face, r1, 0, 0.95)
+  p.box(CHARCOAL, back, f0, face, f1, 0, 0.38)
+  p.box(CHARCOAL, back, f0, face, f1, 0.64, 0.95)
 
   // Walnut lining to the recess, slatted, with a warm wash down it from the head.
-  p.box(WALNUT_DARK, back - 0.05, r0, back, r1, 0.95, 2.3)
+  p.box(WALNUT_DARK, back, r0, back + 0.05, r1, 0.95, 2.3)
   p.many(
     box(0.03, 1.35, 0.055),
     WALNUT,
-    spread(r0 + 0.04, r1 - 0.04, 0.078).map((y) => [back - 0.075, y, 1.625]),
+    spread(r0 + 0.04, r1 - 0.04, 0.078).map((y) => [back + 0.075, y, 1.625]),
   )
-  p.glow(WARM, face + 0.03, r0 + 0.05, face + 0.2, r1 - 0.05, 2.27, 2.3)
+  p.glow(WARM, face - 0.2, r0 + 0.05, face - 0.03, r1 - 0.05, 2.27, 2.3)
 
   // Wall-hung TV on the walnut, and the long linear fire under it.
-  p.box(INK, back - 0.13, f0 - 0.02, back - 0.1, f1 + 0.02, 1.23, 2.22)
-  p.box(SCREEN, back - 0.16, f0, back - 0.13, f1, 1.25, 2.2)
-  p.box(INK, face, f0, face + 0.2, f1, 0.36, 0.66)
-  p.box(INK, face - 0.01, f0 + 0.05, face + 0.02, f1 - 0.05, 0.39, 0.42)
-  p.glow(FLAME, face - 0.012, f0 + 0.05, face + 0.018, f1 - 0.05, 0.42, 0.56)
+  p.box(INK, back + 0.1, f0 - 0.02, back + 0.13, f1 + 0.02, 1.23, 2.22)
+  p.box(SCREEN, back + 0.13, f0, back + 0.16, f1, 1.25, 2.2)
+  p.box(INK, face - 0.2, f0, face, f1, 0.36, 0.66)
+  p.box(INK, face - 0.02, f0 + 0.05, face + 0.01, f1 - 0.05, 0.39, 0.42)
+  p.glow(FLAME, face - 0.018, f0 + 0.05, face + 0.012, f1 - 0.05, 0.42, 0.56)
 
-  // A vase on the shoulder of the joinery, left of the fire.
-  plant(p, face + 0.17, r0 + 0.12, 0.42, 0.95)
+  // A vase on the shoulder of the joinery, beside the fire.
+  plant(p, face - 0.17, r0 + 0.12, 0.42, 0.95)
 
-  // ── L-shaped sofa, facing the media wall, wrapping round towards the kitchen ──
-  p.box(CREAM, 0.58, 1.0, 1.58, 4.2, 0.05, 0.4)
-  p.box(CREAM, 1.58, 3.22, 3.45, 4.2, 0.05, 0.4)
-  p.box(CREAM, 0.58, 1.0, 0.9, 4.2, 0.4, 0.82) // back, long run
-  p.box(CREAM, 0.9, 3.88, 3.45, 4.2, 0.4, 0.82) // back, return
-  p.box(CREAM, 0.9, 1.0, 1.58, 1.22, 0.4, 0.66) // arm at the open end
-  p.box(CREAM, 3.25, 3.22, 3.45, 4.2, 0.4, 0.66) // arm at the far end of the return
+  // ── L-shaped sofa, backing onto the partition and facing the media wall ──
+  // Mirrored about the room's centre line at x 2.9015, so it keeps the clearances it was laid
+  // out with: 1.02 m from the seat to the coffee table, 2.5 m across to the joinery face.
+  p.box(CREAM, 4.223, 1.0, 5.223, 4.2, 0.05, 0.4)
+  p.box(CREAM, 2.353, 3.22, 4.223, 4.2, 0.05, 0.4)
+  p.box(CREAM, 4.903, 1.0, 5.223, 4.2, 0.4, 0.82) // back, long run
+  p.box(CREAM, 2.353, 3.88, 4.903, 4.2, 0.4, 0.82) // back, return
+  p.box(CREAM, 4.223, 1.0, 4.903, 1.22, 0.4, 0.66) // arm at the open end
+  p.box(CREAM, 2.353, 3.22, 2.553, 4.2, 0.4, 0.66) // arm at the far end of the return
   for (const [a, b] of [
     [1.24, 2.11],
     [2.13, 3.0],
     [3.02, 3.86],
   ]) {
-    p.box(LINEN, 0.9, a, 1.56, b, 0.4, 0.56)
+    p.box(LINEN, 4.243, a, 4.903, b, 0.4, 0.56)
   }
   for (const [a, b] of [
-    [1.6, 2.42],
-    [2.44, 3.24],
+    [3.383, 4.203],
+    [2.563, 3.363],
   ]) {
     p.box(LINEN, a, 3.24, b, 3.86, 0.4, 0.56)
   }
@@ -453,26 +458,26 @@ function buildLiving(p: Place) {
     [2.5, LINEN],
     [3.5, OLIVE],
   ] as Array<[number, THREE.Material]>) {
-    p.box(mat, 0.9, y - 0.21, 1.04, y + 0.21, 0.54, 0.96)
+    p.box(mat, 4.763, y - 0.21, 4.903, y + 0.21, 0.54, 0.96)
   }
   for (const [x, mat] of [
-    [1.95, LINEN],
-    [2.85, OLIVE],
+    [3.853, LINEN],
+    [2.953, OLIVE],
   ] as Array<[number, THREE.Material]>) {
     p.box(mat, x - 0.21, 3.74, x + 0.21, 3.88, 0.54, 0.96)
   }
-  p.box(OLIVE, 2.6, 3.1, 3.2, 3.7, 0.5, 0.58) // throw over the return
+  p.box(OLIVE, 2.603, 3.14, 3.203, 3.8, 0.33, 0.47) // throw, draped over the front of the return
 
   // Round coffee table with a tray on it, between the sofa and the fire.
-  p.at(new THREE.CylinderGeometry(0.48, 0.48, 0.05, 28), CHARCOAL, 2.6, 2.3, 0.375)
-  p.at(new THREE.CylinderGeometry(0.28, 0.34, 0.35, 20), CHARCOAL, 2.6, 2.3, 0.175)
-  p.at(new THREE.CylinderGeometry(0.2, 0.2, 0.025, 20), WALNUT, 2.6, 2.3, 0.413)
-  p.at(new THREE.CylinderGeometry(0.045, 0.045, 0.09, 12), PALE_STONE, 2.55, 2.24, 0.47)
-  noShadow(p.at(new THREE.CylinderGeometry(0.03, 0.03, 0.01, 10), WARM, 2.55, 2.24, 0.517))
-  p.box(LINEN, 2.66, 2.3, 2.78, 2.5, 0.425, 0.455)
+  p.at(new THREE.CylinderGeometry(0.48, 0.48, 0.05, 28), CHARCOAL, 3.203, 2.3, 0.375)
+  p.at(new THREE.CylinderGeometry(0.28, 0.34, 0.35, 20), CHARCOAL, 3.203, 2.3, 0.175)
+  p.at(new THREE.CylinderGeometry(0.2, 0.2, 0.025, 20), WALNUT, 3.203, 2.3, 0.413)
+  p.at(new THREE.CylinderGeometry(0.045, 0.045, 0.09, 12), PALE_STONE, 3.253, 2.24, 0.47)
+  noShadow(p.at(new THREE.CylinderGeometry(0.03, 0.03, 0.01, 10), WARM, 3.253, 2.24, 0.517))
+  p.box(LINEN, 3.023, 2.3, 3.143, 2.5, 0.425, 0.455)
 
-  p.box(WOOL, 1.35, 0.8, 4.9, 4.6, 0, 0.014)
-  plant(p, 0.85, 0.85, 1.5)
+  p.box(WOOL, 0.903, 0.8, 4.453, 4.6, 0, 0.014)
+  plant(p, 4.953, 0.85, 1.5)
 
   // ── Dining for six, set east so the way through to the kitchen stays clear ──
   p.box(WALNUT, 3.625, 5.4, 4.575, 7.2, 0.72, 0.76)
