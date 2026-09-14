@@ -19,7 +19,8 @@ and published as a static site.
   The walker raycasts the real geometry, so the stairs work as stairs and the walls stop you.
 - **Peel it apart.** Show the basement, the ground floor, or both; hide the roof; hide the site.
 - **Arrive at it.** The plot fronts a street, with a sliding gate on the driveway axis and a
-  pedestrian gate on the entrance axis.
+  pedestrian gate on the entrance axis. Press *Watch the car arrive* and a car comes down the
+  road, waits for the gate, descends the ramp and parks once the garage door is up.
 - **Move the sun.** Azimuth and altitude sliders, with real shadows.
 - **Try finishes.** Switch the whole house between material schemes.
 - **See the design ideas.** A second layer, from the owner's reference renders rather than
@@ -141,6 +142,8 @@ src/
     furniture.ts  the interiors from the reference renders
     planting.ts   hedges, shrubs and trees
     street.ts     carriageway, kerb, footpath, and the gates that open
+    vehicle.ts    the car, built from an extruded side profile
+    arrival.ts    the choreography: gate, ramp, garage door, park
     materials.ts  schemes → materials, incl. small procedural textures
     viewer.ts     renderer, camera, sun, orbit + walk controls
   main.ts         UI wiring

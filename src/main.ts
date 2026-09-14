@@ -6,6 +6,8 @@ import { MaterialLibrary } from './scene/materials'
 import { buildHouse } from './scene/builder'
 import { SPOT_LEVELS } from './model/site'
 import { Viewer } from './scene/viewer'
+import { Car } from './scene/vehicle'
+import { Arrival } from './scene/arrival'
 import {
   LANGS,
   applyStatic,
@@ -268,6 +270,69 @@ addEventListener('keydown', (e) => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Coming home
+// ─────────────────────────────────────────────────────────────────────────────
+
+const car = new Car()
+const arrival = new Arrival(car, {
+  setVehicleGate: (t) => parts.street.setVehicleGate(t),
+  setGarageDoor: (t) => parts.garageDoor.setOpen(t),
+})
+viewer.scene.add(arrival.group)
+
+const arrivalBtn = $<HTMLButtonElement>('#arrival')
+let followCar = false
+
+function paintArrivalButton() {
+  arrivalBtn.classList.toggle('on', arrival.running)
+  arrivalBtn.textContent = arrival.running ? t('ui.arrivalStop') : t('ui.arrival')
+}
+retranslators.push(paintArrivalButton)
+
+arrivalBtn.addEventListener('click', () => {
+  if (arrival.running) {
+    arrival.stop()
+  } else {
+    // There is nothing to arrive along if the street is switched off, and nothing to watch
+    // from inside the house.
+    if (!streetOn) {
+      streetOn = true
+      streetToggle.checked = true
+      parts.street.group.visible = true
+      writeUrl()
+    }
+    if (viewer.cameraMode === 'walk') setWalk(false)
+    arrival.start()
+    followCar = true
+  }
+  paintArrivalButton()
+  arrivalBtn.blur()
+})
+
+arrival.onFinish(() => {
+  followCar = false
+  paintArrivalButton()
+})
+
+// Touching the model hands the camera back. The car carries on either way — you are watching
+// it, not driving it.
+canvas.addEventListener('pointerdown', () => {
+  followCar = false
+})
+
+viewer.onTick((dt) => {
+  arrival.update(dt)
+  if (!followCar || !arrival.running || viewer.cameraMode !== 'orbit') return
+  // This runs after OrbitControls has had its go at the camera, so it wins for the frame; and
+  // because the target is moved with it, letting go leaves the orbit anchored on the car.
+  const f = arrival.cameraFrame()
+  const k = Math.min(1, dt * 6)
+  viewer.camera.position.lerp(f.position, k)
+  viewer.controls.target.lerp(f.target, k)
+  viewer.camera.lookAt(viewer.controls.target)
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Finishes — the hook the inspiration picker plugs into
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -518,6 +583,7 @@ if (!camParam && wantedView && VIEWS[wantedView]) {
 }
 
 paintWalkButton()
+paintArrivalButton()
 writeUrl()
 
 // One frame of geometry is up — take the splash away and drop it from the DOM.
