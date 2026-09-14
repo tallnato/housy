@@ -1,9 +1,9 @@
-# myhouse
+# housy
 
 An interactive 3D model of a two-storey house, built directly from its architectural drawings
 and published as a static site.
 
-**→ Live: https://tallnato.github.io/myhouse/**
+**→ Live: https://tallnato.github.io/housy/**
 
 ![The house and its plot](docs/preview.png)
 
@@ -95,13 +95,12 @@ The viewer keeps its state in the URL, so any view is a link you can send someon
 | `floor` | `cave` `ground` | isolate one floor |
 | `roof` | `0` | take the roof off |
 | `scheme` | `as-specified` `warm-minimal` `dark-contrast` `white-model` | finishes |
-| `sun` | `azimuth,altitude` in degrees | e.g. `330,38` |
 | `ui` | `0` | hide the chrome, for embedding |
 | `labels` | `0` | hide the room names |
 | `cam` / `at` | `x,y,z` | place the camera and its target exactly |
 
 ```
-https://tallnato.github.io/myhouse/?view=topo&floor=cave&roof=0
+https://tallnato.github.io/housy/?view=topo&floor=cave&roof=0
 ```
 
 ## Running it
@@ -114,7 +113,7 @@ npm run typecheck
 ```
 
 Deploys itself: pushing to `main` runs `.github/workflows/deploy.yml`, which builds with
-`BASE_PATH=/myhouse/` and publishes `dist/` to GitHub Pages.
+`BASE_PATH=/housy/` and publishes `dist/` to GitHub Pages.
 
 ## Layout
 

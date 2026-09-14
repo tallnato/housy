@@ -176,9 +176,9 @@ export const GROUND_WALLS: Wall[] = [
     thickness: SIZE.wallExt,
     exterior: true,
     openings: [
-      french(1.002, 5.153, 'Sala — glazed wall'),
-      french(6.203, 8.203, 'Quarto'),
-      french(11.004, 13.004, 'Quarto'),
+      french(1.002, 5.153, 'Living room — glazed wall'),
+      french(6.203, 8.203, 'Bedroom'),
+      french(11.004, 13.004, 'Bedroom'),
     ],
   },
   {
@@ -192,11 +192,11 @@ export const GROUND_WALLS: Wall[] = [
     exterior: true,
     openings: [
       // The entrance is a 2.30 m recess split by a 0.30 m pillar into two 1.00 m bays.
-      { from: 4.353, to: 5.353, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'entrance', label: 'Entrada — Átrio' },
+      { from: 4.353, to: 5.353, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'entrance', label: 'Front door' },
       // The kitchen never reaches the front wall; this leaf lights the stair hall.
-      { from: 5.653, to: 6.653, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'french', label: 'Átrio / escadas' },
-      window_(8.753, 9.754, 'I.s.'),
-      french(11.254, 13.255, 'Quarto'),
+      { from: 5.653, to: 6.653, sill: LEVELS.groundFloor, head: G_HEAD, kind: 'french', label: 'Entrance hall' },
+      window_(8.753, 9.754, 'Bathroom'),
+      french(11.254, 13.255, 'Bedroom'),
     ],
   },
   {
@@ -208,7 +208,7 @@ export const GROUND_WALLS: Wall[] = [
     to: SIZE.depth - SIZE.wallExt,
     thickness: SIZE.wallExt,
     exterior: true,
-    openings: [window_(4.751, 6.751, 'Sala'), window_(7.951, 9.451, 'Cozinha')],
+    openings: [window_(4.751, 6.751, 'Living room'), window_(7.951, 9.451, 'Kitchen')],
   },
   {
     id: 'g-right',
@@ -219,7 +219,7 @@ export const GROUND_WALLS: Wall[] = [
     to: SIZE.depth - SIZE.wallExt,
     thickness: SIZE.wallExt,
     exterior: true,
-    openings: [window_(3.95, 4.7, 'I.s.')],
+    openings: [window_(3.95, 4.7, 'Bathroom')],
   },
 
   // ── Partitions ────────────────────────────────────────────────────────────
@@ -236,7 +236,7 @@ export const GROUND_WALLS: Wall[] = [
     from: 5.453,
     to: 13.655,
     thickness: SIZE.wallInt,
-    openings: [door(8.653, 9.454, 'Quarto'), door(9.754, 10.554, 'Quarto')],
+    openings: [door(8.653, 9.454, 'Bedroom'), door(9.754, 10.554, 'Bedroom')],
   },
   // Hall | Sala, running down past the stair
   {
@@ -247,7 +247,7 @@ export const GROUND_WALLS: Wall[] = [
     from: 3.9,
     to: 8.101,
     thickness: SIZE.wallInt,
-    openings: [door(4.051, 4.851, 'Hall')],
+    openings: [door(4.051, 4.851, 'Corridor')],
   },
   // I.s. 5,0 m² wall
   {
@@ -258,7 +258,7 @@ export const GROUND_WALLS: Wall[] = [
     from: 3.9,
     to: 6.051,
     thickness: SIZE.wallInt,
-    openings: [door(4.051, 4.851, 'I.s.')],
+    openings: [door(4.051, 4.851, 'Bathroom')],
   },
   {
     id: 'g-p6',
@@ -268,7 +268,7 @@ export const GROUND_WALLS: Wall[] = [
     from: 7.953,
     to: 11.154,
     thickness: SIZE.wallInt,
-    openings: [door(10.154, 10.954, 'Quarto 16 m²')],
+    openings: [door(10.154, 10.954, 'Bedroom, 16 m²')],
   },
   { id: 'g-p7', level: 'ground', run: 'x', at: 6.001, from: 11.054, to: 13.655, thickness: SIZE.wallInt },
   // Suite wall — two doors: into the suite and into the family bathroom
@@ -280,7 +280,7 @@ export const GROUND_WALLS: Wall[] = [
     from: 5.201,
     to: 10.151,
     thickness: SIZE.wallInt,
-    openings: [door(6.251, 7.051, 'Quarto 16 m²'), door(8.751, 9.551, 'I.s.')],
+    openings: [door(6.251, 7.051, 'Bedroom, 16 m²'), door(8.751, 9.551, 'Bathroom')],
   },
   { id: 'g-p9', level: 'ground', run: 'x', at: 8.101, from: 6.753, to: 9.954, thickness: SIZE.wallInt },
   { id: 'g-p10', level: 'ground', run: 'y', at: 6.803, from: 8.101, to: 10.151, thickness: SIZE.wallInt },
@@ -311,8 +311,8 @@ export const CAVE_WALLS: Wall[] = [
     thickness: SIZE.wallExt,
     exterior: true,
     openings: [
-      { from: 1.002, to: 5.153, sill: LEVELS.caveFloor, head: C_HEAD, kind: 'french', label: 'Garagem' },
-      { from: 8.854, to: 13.005, sill: LEVELS.caveFloor, head: C_HEAD, kind: 'french', label: 'Garagem' },
+      { from: 1.002, to: 5.153, sill: LEVELS.caveFloor, head: C_HEAD, kind: 'french', label: 'Garage' },
+      { from: 8.854, to: 13.005, sill: LEVELS.caveFloor, head: C_HEAD, kind: 'french', label: 'Garage' },
     ],
   },
   {
@@ -325,7 +325,7 @@ export const CAVE_WALLS: Wall[] = [
     thickness: SIZE.wallExt,
     exterior: true,
     openings: [
-      { from: 8.404, to: 13.005, sill: LEVELS.caveFloor, head: C_HEAD, kind: 'garage', label: 'Portão da garagem' },
+      { from: 8.404, to: 13.005, sill: LEVELS.caveFloor, head: C_HEAD, kind: 'garage', label: 'Garage door' },
     ],
   },
   {
@@ -340,8 +340,8 @@ export const CAVE_WALLS: Wall[] = [
     // The two left-hand windows share a head but not a sill: the elevation draws the wider
     // one 1.20 m tall and the narrower one 1.00 m.
     openings: [
-      { from: 4.751, to: 6.751, sill: C_HEAD - 1.2, head: C_HEAD, kind: 'window', label: 'Garagem' },
-      { from: 7.951, to: 9.451, sill: C_HEAD - 1.0, head: C_HEAD, kind: 'window', label: 'I.s. / Lavandaria' },
+      { from: 4.751, to: 6.751, sill: C_HEAD - 1.2, head: C_HEAD, kind: 'window', label: 'Garage' },
+      { from: 7.951, to: 9.451, sill: C_HEAD - 1.0, head: C_HEAD, kind: 'window', label: 'Bathroom / laundry' },
     ],
   },
   {
@@ -364,7 +364,7 @@ export const CAVE_WALLS: Wall[] = [
     from: 0.35,
     to: 4.553,
     thickness: SIZE.wallInt,
-    openings: [caveDoor(4.551, 5.351, 'Lavandaria')],
+    openings: [caveDoor(4.551, 5.351, 'Laundry')],
   },
   { id: 'c-p2', level: 'cave', run: 'y', at: 1.902, from: 7.601, to: 10.151, thickness: SIZE.wallInt },
 
@@ -377,7 +377,7 @@ export const CAVE_WALLS: Wall[] = [
     from: 5.201,
     to: 10.151,
     thickness: SIZE.wallInt,
-    openings: [caveDoor(9.251, 10.051, 'Escadas')],
+    openings: [caveDoor(9.251, 10.051, 'Stairs')],
   },
   { id: 'c-p4', level: 'cave', run: 'y', at: 8.003, from: 5.201, to: 10.151, thickness: SIZE.wallInt },
   { id: 'c-p5', level: 'cave', run: 'x', at: 5.201, from: 5.453, to: 8.053, thickness: SIZE.wallInt },
@@ -396,6 +396,8 @@ export const CAVE_WALLS: Wall[] = [
  */
 export interface Room {
   name: string
+  /** The word printed on the drawing, which is Portuguese. */
+  original: string
   /** Area exactly as printed on the drawing. */
   area: string
   level: Level
@@ -405,62 +407,51 @@ export interface Room {
 
 export const ROOMS: Room[] = [
   // ── Ground floor ──────────────────────────────────────────────────────────
-  {
-    name: 'Sala',
-    area: '36,7 m²',
-    level: 'ground',
-    kind: 'living',
-    // The printed 36,7 m² is the first rectangle alone; the room also opens east into the bay
+  { name: 'Living room', original: 'Sala', area: '36.7 m²', level: 'ground', kind: 'living',
+    // The printed 36.7 m² is the first rectangle alone; the room also opens east into the bay
     // between the bedroom corridor wall and the stair core, with nothing dividing them.
     rects: [
       [0.35, 0.35, 5.453, 7.551],
       [5.453, 3.95, 7.953, 5.151],
-    ],
-  },
-  { name: 'Quarto', area: '14,0 / 12,4 m²', level: 'ground', kind: 'bed', rects: [[5.553, 0.35, 9.554, 3.851]] },
-  { name: 'Quarto', area: '14,0 / 12,4 m²', level: 'ground', kind: 'bed', rects: [[9.654, 0.35, 13.655, 3.851]] },
-  { name: 'I.s.', area: '5,0 m²', level: 'ground', kind: 'bath', rects: [[11.154, 3.95, 13.655, 5.951]] },
-  {
-    name: 'Quarto',
-    area: '16,0 m²',
-    level: 'ground',
-    kind: 'bed',
+    ] },
+  { name: 'Bedroom', original: 'Quarto', area: '14.0 / 12.4 m²', level: 'ground', kind: 'bed',
+    rects: [[5.553, 0.35, 9.554, 3.851]] },
+  { name: 'Bedroom', original: 'Quarto', area: '14.0 / 12.4 m²', level: 'ground', kind: 'bed',
+    rects: [[9.654, 0.35, 13.655, 3.851]] },
+  { name: 'Bathroom', original: 'I.s.', area: '5.0 m²', level: 'ground', kind: 'bath',
+    rects: [[11.154, 3.95, 13.655, 5.951]] },
+  { name: 'Bedroom', original: 'Quarto', area: '16.0 m²', level: 'ground', kind: 'bed',
     // L-shaped: the main room plus the return north of the ensuite.
     rects: [
       [9.954, 6.051, 13.655, 10.151],
       [9.954, 5.251, 11.054, 6.051],
-    ],
-  },
-  { name: 'Vest.', area: '5,0 m²', level: 'ground', kind: 'circulation', rects: [[8.053, 5.251, 9.854, 8.051]] },
-  { name: 'I.s.', area: '6,0 m²', level: 'ground', kind: 'bath', rects: [[6.853, 8.151, 9.854, 10.151]] },
-  { name: 'Cozinha', area: '8,3 m²', level: 'ground', kind: 'kitchen', rects: [[0.35, 7.651, 3.652, 10.151]] },
-  {
-    name: 'Átrio',
-    area: '5,6 m²',
-    level: 'ground',
-    kind: 'circulation',
+    ] },
+  { name: 'Dressing room', original: 'Vest.', area: '5.0 m²', level: 'ground', kind: 'circulation',
+    rects: [[8.053, 5.251, 9.854, 8.051]] },
+  { name: 'Bathroom', original: 'I.s.', area: '6.0 m²', level: 'ground', kind: 'bath',
+    rects: [[6.853, 8.151, 9.854, 10.151]] },
+  { name: 'Kitchen', original: 'Cozinha', area: '8.3 m²', level: 'ground', kind: 'kitchen',
+    rects: [[0.35, 7.651, 3.652, 10.151]] },
+  { name: 'Entrance hall', original: 'Átrio', area: '5.6 m²', level: 'ground', kind: 'circulation',
     rects: [
       [3.752, 7.651, 5.453, 10.151],
       [5.553, 8.851, 6.753, 10.151],
-    ],
-  },
-  { name: 'Corredor', area: '', level: 'ground', kind: 'circulation', rects: [[8.053, 3.95, 11.054, 5.151]] },
+    ] },
+  { name: 'Corridor', original: 'Corredor', area: '', level: 'ground', kind: 'circulation',
+    rects: [[8.053, 3.95, 11.054, 5.151]] },
 
   // ── Basement ──────────────────────────────────────────────────────────────
-  {
-    name: 'Garagem',
-    area: '104,3 m²',
-    level: 'cave',
-    kind: 'garage',
+  { name: 'Garage', original: 'Garagem', area: '104.3 m²', level: 'cave', kind: 'garage',
     // Wraps round the stair core and the laundry block.
     rects: [
       [0.35, 0.35, 5.453, 7.551],
       [5.453, 0.35, 13.655, 5.151],
       [8.053, 5.151, 13.655, 10.151],
-    ],
-  },
-  { name: 'Lavandaria', area: '8,7 m²', level: 'cave', kind: 'utility', rects: [[1.952, 7.651, 5.453, 10.151]] },
-  { name: 'I.s.', area: '3,7 m²', level: 'cave', kind: 'bath', rects: [[0.35, 7.651, 1.852, 10.151]] },
+    ] },
+  { name: 'Laundry', original: 'Lavandaria', area: '8.7 m²', level: 'cave', kind: 'utility',
+    rects: [[1.952, 7.651, 5.453, 10.151]] },
+  { name: 'Bathroom', original: 'I.s.', area: '3.7 m²', level: 'cave', kind: 'bath',
+    rects: [[0.35, 7.651, 1.852, 10.151]] },
 ]
 
 /** Total clear floor area of a room, for checking against the printed figure. */
@@ -531,7 +522,7 @@ export const FIXTURES: Fixture[] = [
   { level: 'ground', kind: 'counter', x0: 0.952, y0: 9.551, x1: 2.952, y1: 10.151, h: 0.9 },
   { level: 'ground', kind: 'sink', x0: 0.427, y0: 8.251, x1: 0.877, y1: 9.176, h: 0.02, base: 0.88 },
   { level: 'ground', kind: 'hob', x0: 1.702, y0: 9.601, x1: 2.202, y1: 10.101, h: 0.02, base: 0.9 },
-  { level: 'ground', kind: 'wardrobe', x0: 2.952, y0: 7.651, x1: 3.652, y1: 8.551, h: 2.2, label: 'despensa' },
+  { level: 'ground', kind: 'wardrobe', x0: 2.952, y0: 7.651, x1: 3.652, y1: 8.551, h: 2.2, label: 'larder' },
   { level: 'ground', kind: 'wardrobe', x0: 2.952, y0: 8.551, x1: 3.552, y1: 9.551, h: 2.2 },
   // ── Átrio ─────────────────────────────────────────────────────────────────
   { level: 'ground', kind: 'wardrobe', x0: 3.752, y0: 7.651, x1: 3.952, y1: 8.951, h: 2.2 },
@@ -559,9 +550,9 @@ export const FIXTURES: Fixture[] = [
   { level: 'cave', kind: 'wc', x0: 1.29, y0: 8.676, x1: 1.85, y1: 9.026, h: 0.42 },
   { level: 'cave', kind: 'shower', x0: 0.35, y0: 9.251, x1: 1.85, y1: 10.151, h: 0.06 },
   // ── Cave: Lavandaria ──────────────────────────────────────────────────────
-  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 7.701, x1: 2.6, y1: 8.301, h: 1.6, label: 'BC / AQS' },
-  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 8.801, x1: 2.6, y1: 9.401, h: 0.85, label: 'MSR' },
-  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 9.501, x1: 2.6, y1: 10.101, h: 0.85, label: 'MLR' },
+  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 7.701, x1: 2.6, y1: 8.301, h: 1.6, label: 'BC / AQS — heat pump and hot water' },
+  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 8.801, x1: 2.6, y1: 9.401, h: 0.85, label: 'MSR — tumble dryer' },
+  { level: 'cave', kind: 'appliance', x0: 2.0, y0: 9.501, x1: 2.6, y1: 10.101, h: 0.85, label: 'MLR — washing machine' },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -569,13 +560,13 @@ export const FIXTURES: Fixture[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const SCHEDULE = [
-  { label: 'Área do terreno / lote', value: '707,0 m²' },
-  { label: 'Área de implantação', value: '147,0 m²' },
-  { label: 'Área total de construção', value: '294,0 m²' },
-  { label: 'Área de habitação', value: '163,0 m²' },
-  { label: 'Área de aparcamento', value: '131,0 m²' },
-  { label: 'Índice de utilização', value: '0,43 m²/m²' },
-  { label: 'Índice de ocupação do solo', value: '0,21 m²/m²' },
+  { label: 'Plot area', value: '707.0 m²' },
+  { label: 'Footprint', value: '147.0 m²' },
+  { label: 'Total floor area', value: '294.0 m²' },
+  { label: 'Living area', value: '163.0 m²' },
+  { label: 'Parking area', value: '131.0 m²' },
+  { label: 'Floor-area ratio', value: '0.43 m²/m²' },
+  { label: 'Site coverage', value: '0.21 m²/m²' },
 ] as const
 
 export const ALL_WALLS = [...CAVE_WALLS, ...GROUND_WALLS]

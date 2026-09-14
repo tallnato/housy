@@ -89,8 +89,12 @@ export class Viewer {
     this.renderer.setAnimationLoop(() => this.tick())
   }
 
-  /** Azimuth in degrees clockwise from +Z (the street side); elevation in degrees. */
-  setSun(azimuthDeg: number, elevationDeg: number) {
+  /**
+   * Places the sun. Azimuth in degrees clockwise from +Z (the street side), elevation in
+   * degrees. The drawings carry no north point, so there is nothing to orient to: it is set
+   * once, at an angle that lights the front and left façades and reads the massing well.
+   */
+  private setSun(azimuthDeg: number, elevationDeg: number) {
     const az = THREE.MathUtils.degToRad(azimuthDeg)
     const el = THREE.MathUtils.degToRad(Math.max(2, elevationDeg))
     const r = 70

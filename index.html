@@ -1,106 +1,95 @@
 <!doctype html>
-<html lang="pt">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Casa · 3D</title>
+    <title>House · 3D</title>
     <meta name="description" content="Interactive 3D model of a two-storey house, built from its architectural drawings." />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
   </head>
   <body>
-    <div id="boot">a construir o modelo…</div>
+    <div id="boot">building the model…</div>
     <canvas id="view"></canvas>
 
     <header class="topbar">
       <div class="title">
-        <strong>Casa</strong>
-        <span>moradia unifamiliar · 147 m² de implantação</span>
+        <strong>House</strong>
+        <span>single-family house · 147 m² footprint</span>
       </div>
-      <button id="help-toggle" class="ghost" type="button" aria-label="Ajuda">?</button>
-      <button id="panel-toggle" class="ghost only-narrow" type="button" aria-label="Painel">☰</button>
+      <button id="help-toggle" class="ghost" type="button" aria-label="About">?</button>
+      <button id="panel-toggle" class="ghost only-narrow" type="button" aria-label="Panel">☰</button>
     </header>
 
     <aside class="panel" id="panel">
       <section>
-        <h2>Pisos</h2>
+        <h2>Floors</h2>
         <div class="seg" id="floors" role="group">
-          <button data-floor="all" class="on" type="button">Tudo</button>
-          <button data-floor="cave" type="button">Cave</button>
-          <button data-floor="ground" type="button">R/C</button>
+          <button data-floor="all" class="on" type="button">Both</button>
+          <button data-floor="cave" type="button">Basement</button>
+          <button data-floor="ground" type="button">Ground</button>
         </div>
-        <label class="check"><input type="checkbox" id="roof-on" checked /> <span>Cobertura</span></label>
-        <label class="check"><input type="checkbox" id="site-on" checked /> <span>Terreno e muros</span></label>
-        <label class="check"><input type="checkbox" id="labels-on" checked /> <span>Nomes dos espaços</span></label>
+        <label class="check"><input type="checkbox" id="roof-on" checked /> <span>Roof</span></label>
+        <label class="check"><input type="checkbox" id="site-on" checked /> <span>Site and walls</span></label>
+        <label class="check"><input type="checkbox" id="labels-on" checked /> <span>Room names</span></label>
       </section>
 
       <section>
-        <h2>Vista</h2>
+        <h2>View</h2>
         <div class="grid-views" id="views">
-          <button data-view="axo" type="button">Axonometria</button>
-          <button data-view="principal" type="button">Alç. principal</button>
-          <button data-view="posterior" type="button">Alç. posterior</button>
-          <button data-view="esquerdo" type="button">Lat. esquerdo</button>
-          <button data-view="direito" type="button">Lat. direito</button>
-          <button data-view="topo" type="button">Planta</button>
+          <button data-view="axo" type="button">Axonometric</button>
+          <button data-view="principal" type="button">Front</button>
+          <button data-view="posterior" type="button">Rear</button>
+          <button data-view="esquerdo" type="button">Left side</button>
+          <button data-view="direito" type="button">Right side</button>
+          <button data-view="topo" type="button">Plan</button>
         </div>
-        <button id="walk" class="wide" type="button">Entrar na casa (modo a pé)</button>
+        <button id="walk" class="wide" type="button">Walk through the house</button>
       </section>
 
       <section>
-        <h2>Sol</h2>
-        <label class="slider">
-          <span>Orientação<em id="az-val">325°</em></span>
-          <input type="range" id="sun-az" min="0" max="360" value="325" />
-        </label>
-        <label class="slider">
-          <span>Altura<em id="el-val">42°</em></span>
-          <input type="range" id="sun-el" min="3" max="85" value="42" />
-        </label>
-        <p class="note">As peças desenhadas não indicam o norte, por isso a orientação é livre.</p>
-      </section>
-
-      <section>
-        <h2>Acabamentos</h2>
+        <h2>Finishes</h2>
         <div id="schemes" class="schemes"></div>
         <p class="note" id="scheme-note"></p>
       </section>
 
       <section>
-        <h2>Áreas</h2>
+        <h2>Areas</h2>
         <dl id="schedule" class="schedule"></dl>
       </section>
 
       <section>
-        <h2>Compartimentos</h2>
+        <h2>Rooms</h2>
         <ul id="rooms" class="rooms"></ul>
       </section>
     </aside>
 
     <div class="hud" id="hud" hidden>
-      <strong>Modo a pé</strong>
-      <span>WASD para andar · rato para olhar · Shift para correr · Esc para sair</span>
+      <strong>Walking</strong>
+      <span>WASD to move · mouse to look · Shift to run · Esc to leave</span>
     </div>
 
     <dialog id="help">
-      <h2>Sobre este modelo</h2>
+      <h2>About this model</h2>
       <p>
-        Modelo tridimensional gerado a partir das peças desenhadas do projecto de arquitectura
-        (plantas, cortes e alçados à escala 1:100). Todas as dimensões foram lidas da geometria
-        vectorial dos desenhos, não estimadas.
+        Generated from the architect's drawing set — plans, sections and elevations at 1:100.
+        Every dimension was read from the vector geometry inside the drawings rather than
+        estimated off the printed image.
       </p>
       <ul>
-        <li>Implantação 14,005 × 10,501 m · pé-direito livre 2,60 m em ambos os pisos</li>
-        <li>Cave à cota −1,61 · rés-do-chão à cota +1,54 · platibanda à cota +4,99</li>
-        <li>Paredes exteriores 0,35 m · divisórias 0,10 m</li>
+        <li>Footprint 14.005 × 10.501 m · 2.60 m clear height on both floors</li>
+        <li>Basement at −1.61 · ground floor at +1.54 · parapet at +4.99</li>
+        <li>External walls 0.35 m · partitions 0.10 m</li>
       </ul>
-      <h3>Cotas do terreno</h3>
-      <p>O terreno foi reconstruído a partir das cotas assinaladas nos cortes e alçados:</p>
+      <h3>Ground levels</h3>
+      <p>The terrain is reconstructed from the levels dimensioned on the sections and elevations:</p>
       <ul class="levels" id="levels"></ul>
       <p class="note">
-        O modelo não contém qualquer informação de localização: sem morada, sem arruamentos e sem
-        coordenadas. O contorno do lote está representado apenas em coordenadas relativas à casa.
+        The drawings carry no north point, so the sun sits at a fixed angle chosen to read the
+        massing rather than a real orientation. The model holds no location information — no
+        address, no streets, no coordinates — and the plot outline is stored only as offsets
+        from the house's own corner.
       </p>
-      <form method="dialog"><button type="submit">Fechar</button></form>
+      <form method="dialog"><button type="submit">Close</button></form>
     </dialog>
 
     <script type="module" src="/src/main.ts"></script>

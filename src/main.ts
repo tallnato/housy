@@ -17,7 +17,7 @@ const parts = buildHouse(lib)
 viewer.scene.add(parts.root)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shareable state. `?view=posterior&floor=cave&scheme=dark-contrast&sun=325,42` sets the
+// Shareable state. `?view=posterior&floor=cave&scheme=dark-contrast` sets the
 // viewer up on load, and the address bar tracks whatever you change.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -28,7 +28,6 @@ function writeUrl() {
   if (floorMode !== 'all') p.set('floor', floorMode)
   if (!roofOn) p.set('roof', '0')
   if (lib.current.id !== AS_SPECIFIED.id) p.set('scheme', lib.current.id)
-  p.set('sun', `${az.value},${el.value}`)
   const q = p.toString()
   history.replaceState(null, '', q ? `?${q}` : location.pathname)
 }
@@ -121,7 +120,7 @@ const hud = $('#hud')
 function setWalk(on: boolean) {
   viewer.setMode(on ? 'walk' : 'orbit')
   walkBtn.classList.toggle('on', on)
-  walkBtn.textContent = on ? 'Sair do modo a pé' : 'Entrar na casa (modo a pé)'
+  walkBtn.textContent = on ? 'Leave walk mode' : 'Walk through the house'
   hud.hidden = !on
   if (on) {
     roofOn = true
@@ -137,25 +136,6 @@ walkBtn.addEventListener('click', () => setWalk(viewer.cameraMode !== 'walk'))
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && viewer.cameraMode === 'walk') setWalk(false)
 })
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sun
-// ─────────────────────────────────────────────────────────────────────────────
-
-const az = $<HTMLInputElement>('#sun-az')
-const el = $<HTMLInputElement>('#sun-el')
-const updateSun = () => {
-  viewer.setSun(+az.value, +el.value)
-  $('#az-val').textContent = `${az.value}°`
-  $('#el-val').textContent = `${el.value}°`
-}
-const updateSunAndUrl = () => {
-  updateSun()
-  writeUrl()
-}
-az.addEventListener('input', updateSunAndUrl)
-el.addEventListener('input', updateSunAndUrl)
-updateSun()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Finishes — the hook the inspiration picker plugs into
@@ -207,9 +187,9 @@ const roomList = $('#rooms')
 ROOMS.filter((r) => r.area).forEach((r, i) => {
   const li = document.createElement('li')
   li.dataset.idx = String(i)
-  li.innerHTML = `<span>${r.name} <span class="lvl">${r.level === 'cave' ? 'cave' : 'r/c'}</span></span><span class="area">${r.area}</span>`
+  li.innerHTML = `<span>${r.name} <span class="lvl">${r.level === 'cave' ? 'basement' : 'ground'}</span></span><span class="area">${r.area}</span>`
   // The printed figure against what the modelled rectangles actually measure.
-  li.title = `desenho ${r.area} · modelo ${roomArea(r).toFixed(1).replace('.', ',')} m²`
+  li.title = `${r.original} · drawing ${r.area} · model ${roomArea(r).toFixed(1)} m²`
   li.addEventListener('click', () => {
     const y = (r.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor) + 1.4
     const [cx, cy] = roomCentre(r)
@@ -279,7 +259,7 @@ viewer.onTick(() => {
 const levelsEl = $('#levels')
 for (const l of SPOT_LEVELS) {
   const li = document.createElement('li')
-  const v = (l.z >= 0 ? '+' : '−') + Math.abs(l.z).toFixed(2).replace('.', ',')
+  const v = (l.z >= 0 ? '+' : '−') + Math.abs(l.z).toFixed(2)
   li.innerHTML = `<b>${v}</b><span>${l.note}</span>`
   levelsEl.append(li)
 }
@@ -306,13 +286,6 @@ if (params.get('ui') === '0') {
 if (params.get('labels') === '0') {
   labelsOn = false
   $<HTMLInputElement>('#labels-on').checked = false
-}
-
-const wantedSun = params.get('sun')?.split(',').map(Number)
-if (wantedSun?.length === 2 && wantedSun.every(Number.isFinite)) {
-  az.value = String(wantedSun[0])
-  el.value = String(wantedSun[1])
-  updateSun()
 }
 
 const wantedScheme = params.get('scheme')

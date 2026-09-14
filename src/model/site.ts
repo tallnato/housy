@@ -34,15 +34,15 @@ export const PLOT: ReadonlyArray<readonly [number, number]> = [
  * Kept as data because they are the evidence; the surface below is derived from them.
  */
 export const SPOT_LEVELS = [
-  { z: 0.215, note: 'street surface, ~10.6 m in front of the house' },
+  { z: 0.215, note: 'street, 10.6 m in front of the house' },
   { z: 0.309, note: 'footpath outside the front boundary' },
-  { z: 0.469, note: 'paved strip just inside the front boundary' },
-  { z: 0.369, note: 'front terrace, 2.1 m in front of the house' },
-  { z: 1.519, note: 'entrance landing, 0.75 m in front of the door' },
+  { z: 0.469, note: 'paving inside the front boundary' },
+  { z: 0.369, note: 'front terrace' },
+  { z: 1.519, note: 'entrance platform' },
   { z: -0.07, note: 'head of the garage ramp' },
-  { z: -0.79, note: 'ground at the left flank, mid-depth (Corte 4)' },
-  { z: -1.02, note: 'ground at the right flank, mid-depth (Corte 4)' },
-  { z: -1.711, note: 'rear yard, 2.5 m behind the house' },
+  { z: -0.79, note: 'left flank, mid-depth' },
+  { z: -1.02, note: 'right flank, mid-depth' },
+  { z: -1.711, note: 'rear yard' },
   { z: -1.565, note: 'rear plot boundary' },
 ] as const
 
@@ -86,7 +86,7 @@ interface Pad {
 
 const PADS: Pad[] = [
   // Entrance terrace across the front of the house, at the foot of the steps
-  { x0: -2.5, y0: 10.4, x1: 8.2, y1: 15.2, z: 0.45, falloff: 2.4, note: 'entrance terrace' },
+  { x0: -2.5, y0: 10.4, x1: 8.2, y1: 15.2, z: 0.47, falloff: 2.4, note: 'entrance terrace' },
   // Apron at the head of the driveway, in front of the garage
   { x0: 7.8, y0: 13.6, x1: 14.2, y1: 16.2, z: -0.07, falloff: 2.0, note: 'head of the ramp' },
   // Rear yard, cut down so the basement opens onto it at grade
@@ -117,21 +117,21 @@ export const DRIVEWAY = {
 }
 
 /**
- * The entrance approach: a landing at +1.52, level with the threshold and projecting 0.75 m
- * from the façade, then steps down to the terrace. Corte 1 and Corte 2 both dimension it.
+ * The entrance approach, taken straight off the ground-floor plan.
+ *
+ * The flight does NOT run out from the façade — it runs *along* it. A 4.50 × 1.50 m platform
+ * sits in front of the door at threshold level, and five treads of 0.300 m climb eastward onto
+ * it from the terrace at its west end. Six risers of 0.175 m: 0.47 + 6 × 0.175 = 1.52, which
+ * closes exactly on the platform level the sections dimension, and uses the same riser as the
+ * internal staircase.
  */
-export const ENTRANCE_STEPS = {
-  x0: 4.2,
-  x1: 6.8,
-  /** The landing runs from the façade out to here. */
-  landingTo: 11.254,
-  landingZ: 1.519,
-  /** Steps run from the landing down to the terrace. */
-  yBottom: 12.7,
-  from: 0.45,
-  steps: 6,
-  /** Guard wall along the landing, 1.0 m above it. */
-  guardTop: 2.52,
+export const ENTRANCE = {
+  /** The level platform in front of the door. */
+  platform: { x0: 4.002, x1: 7.003, y0: 10.501, y1: 12.001, z: 1.519 },
+  /** The flight at its west end, climbing in +x. */
+  steps: { x0: 2.502, x1: 4.002, from: 0.47, risers: 6 },
+  /** Solid parapet along the outer edge and round the east end, 1.00 m above what it stands on. */
+  parapet: { thickness: 0.15, height: 1.0 },
 }
 
 /**

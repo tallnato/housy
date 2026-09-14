@@ -26,7 +26,7 @@ import {
   type Room,
   type Wall,
 } from '../model/house'
-import { BOUNDARY, DRIVEWAY, ENTRANCE_STEPS, PLOT, groundAt } from '../model/site'
+import { BOUNDARY, DRIVEWAY, ENTRANCE, PLOT, groundAt } from '../model/site'
 import type { MaterialLibrary } from './materials'
 import type { SurfaceId } from '../model/finishes'
 
@@ -340,13 +340,16 @@ function buildStairs(lib: MaterialLibrary): THREE.Group {
     /** true = climbing towards the rear (−y). */
     towardsRear: boolean,
   ) => {
-    for (let i = 0; i < STAIR.risersPerFlight; i++) {
+    // A flight of nine risers has eight treads in it: the ninth riser lands you on the
+    // half-landing (or, for the upper flight, on the floor above).
+    for (let i = 0; i < goings; i++) {
       const top = startZ + rise * (i + 1)
       const z = towardsRear
         ? STAIR.flightTo - going * (i + 0.5)
         : STAIR.flightFrom + going * (i + 0.5)
-      // Drawn as the solid block under each tread, so the flight reads from below too.
-      g.add(mesh(box(x1 - x0, top - STAIR.bottom, going), mat, (x0 + x1) / 2, (STAIR.bottom + top) / 2, z))
+      // Each tread is the solid block beneath it, standing on the flight's own base — so the
+      // upper flight sits on the landing rather than filling the well down to the basement.
+      g.add(mesh(box(x1 - x0, top - startZ, going), mat, (x0 + x1) / 2, (startZ + top) / 2, z))
     }
   }
 
@@ -366,33 +369,69 @@ function buildStairs(lib: MaterialLibrary): THREE.Group {
     ),
   )
 
-  // Exterior entrance: landing at the threshold, guard wall, then steps down to the terrace.
-  const es = ENTRANCE_STEPS
-  const exW = es.x1 - es.x0
-  const exCx = (es.x0 + es.x1) / 2
-  const landingDepth = es.landingTo - SIZE.depth
+  // The entrance approach: a platform at threshold level with a flight climbing onto it from
+  // the west, and a solid parapet along its outer edge.
+  const e = ENTRANCE
+  const paveMat = lib.get('terrace')
+  const eRise = (e.platform.z - e.steps.from) / e.steps.risers
+  const depth = e.platform.y1 - e.platform.y0
+  const midY = (e.platform.y0 + e.platform.y1) / 2
+  const treads = e.steps.risers - 1
+  const eGoing = (e.steps.x1 - e.steps.x0) / treads
+
+  // Platform
   g.add(
     mesh(
-      box(exW, 0.25, landingDepth),
-      lib.get('terrace'),
-      exCx,
-      es.landingZ - 0.125,
-      SIZE.depth + landingDepth / 2,
+      box(e.platform.x1 - e.platform.x0, e.platform.z - e.steps.from + 0.6, depth),
+      paveMat,
+      (e.platform.x0 + e.platform.x1) / 2,
+      (e.platform.z + e.steps.from - 0.6) / 2,
+      midY,
     ),
   )
-  // Guard walls down both sides of the landing
-  for (const x of [es.x0 + 0.1, es.x1 - 0.1]) {
-    const h = es.guardTop - es.landingZ
-    g.add(mesh(box(0.2, h, landingDepth), lib.get('boundaryWall'), x, es.landingZ + h / 2, SIZE.depth + landingDepth / 2))
+
+  // Treads, each the solid block beneath it
+  const treadTop = (i: number) => e.steps.from + eRise * (i + 1)
+  for (let i = 0; i < treads; i++) {
+    const top = treadTop(i)
+    g.add(
+      mesh(
+        box(eGoing, top - e.steps.from + 0.6, depth),
+        paveMat,
+        e.steps.x0 + eGoing * (i + 0.5),
+        (top + e.steps.from - 0.6) / 2,
+        midY,
+      ),
+    )
   }
 
-  const eRise = (es.landingZ - es.from) / es.steps
-  const eGoing = (es.yBottom - es.landingTo) / es.steps
-  for (let i = 0; i < es.steps; i++) {
-    const top = es.landingZ - eRise * i
-    const z = es.landingTo + eGoing * (i + 0.5)
-    g.add(mesh(box(exW, top - es.from + 0.3, eGoing), lib.get('terrace'), exCx, (top + es.from - 0.3) / 2, z))
+  // Parapet along the outer edge, stepping with the flight, then level over the platform.
+  const pMat = lib.get('boundaryWall')
+  const pY = e.platform.y1 - e.parapet.thickness / 2
+  for (let i = 0; i < treads; i++) {
+    const top = treadTop(i) + e.parapet.height
+    g.add(mesh(box(eGoing, e.parapet.height, e.parapet.thickness), pMat, e.steps.x0 + eGoing * (i + 0.5), top - e.parapet.height / 2, pY))
   }
+  const pTop = e.platform.z + e.parapet.height
+  g.add(
+    mesh(
+      box(e.platform.x1 - e.platform.x0, e.parapet.height, e.parapet.thickness),
+      pMat,
+      (e.platform.x0 + e.platform.x1) / 2,
+      pTop - e.parapet.height / 2,
+      pY,
+    ),
+  )
+  // ...and the return round the east end, which is what the side elevation shows.
+  g.add(
+    mesh(
+      box(e.parapet.thickness, e.parapet.height, depth - e.parapet.thickness),
+      pMat,
+      e.platform.x1 - e.parapet.thickness / 2,
+      pTop - e.parapet.height / 2,
+      midY - e.parapet.thickness / 2,
+    ),
+  )
   return g
 }
 

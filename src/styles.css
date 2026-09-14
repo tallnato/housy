@@ -220,30 +220,6 @@ button {
   color: #fff;
 }
 
-.slider {
-  display: block;
-  margin-bottom: 10px;
-}
-
-.slider span {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11.5px;
-  color: #cdd4dc;
-  margin-bottom: 4px;
-}
-
-.slider em {
-  font-style: normal;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.slider input {
-  width: 100%;
-  accent-color: var(--accent);
-}
-
 .schemes {
   display: grid;
   gap: 5px;
