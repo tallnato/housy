@@ -5,7 +5,7 @@ and published as a static site.
 
 **→ Live: https://tallnato.github.io/housy/**
 
-![The house and its plot](docs/preview.png)
+![The house, its plot and the street](docs/preview.png)
 
 <!-- prettier-ignore -->
 > The drawings themselves are not in this repository, and neither is anything that would locate
@@ -23,7 +23,9 @@ and published as a static site.
 - **Arrive at it.** The plot fronts a street, with a sliding gate on the driveway axis and a
   pedestrian gate on the entrance axis. Press *Watch the car arrive* and a car comes down the
   road, waits for the gate, descends the ramp and parks once the garage door is up.
-- **Move the sun.** Azimuth and altitude sliders, with real shadows.
+
+  ![The street frontage, with both gates shut](docs/street.png)
+
 - **Try finishes.** Switch the whole house between material schemes.
 - **See the design ideas.** A second layer, from the owner's reference renders rather than
   from the drawings: furniture, timber slat cladding, an eaves cove light, glass Juliet
@@ -38,7 +40,8 @@ Pick a floor and the roof and everything above it peels away:
 
 ![Ground floor with the roof off](docs/plan.png)
 
-…or walk in. The living room's rear wall is a 4.15 m sliding screen running floor to lintel:
+…or walk in. The living room's rear wall is a 4.15 m sliding screen running floor to lintel,
+and the media wall, the sofa and the dining table are the design layer:
 
 ![Inside the living room](docs/interior.png)
 
