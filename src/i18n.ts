@@ -89,6 +89,8 @@ const EN = {
   'ui.arrivalStop': 'Stop',
   'ui.people': 'Walk as',
   'ui.peopleNone': 'No one',
+  /** Placeholders are filled in by the panel: name, standing height, eye height. */
+  'ui.peopleNote': '{name} · {height} m tall · eyes at {eyes} m',
   'ui.gateVehicle': 'Vehicle gate',
   'ui.gatePedestrian': 'Pedestrian gate',
   'ui.garageDoor': 'Garage door',
@@ -163,6 +165,7 @@ const PT: Record<Key, string> = {
   'ui.arrivalStop': 'Parar',
   'ui.people': 'Percorrer como',
   'ui.peopleNone': 'Ninguém',
+  'ui.peopleNote': '{name} · {height} m de altura · olhos a {eyes} m',
   'ui.gateVehicle': 'Portão automóvel',
   'ui.gatePedestrian': 'Portão de peões',
   'ui.garageDoor': 'Portão da garagem',

@@ -235,7 +235,8 @@ button {
   font-size: 12px;
 }
 
-.wide.on {
+.wide.on,
+.grid-views button.on {
   background: var(--accent-soft);
   border-color: var(--accent);
   color: #fff;

@@ -17,6 +17,8 @@ and published as a static site.
 
 - **Walk around it.** Orbit the model, or drop into a first-person walkthrough and go inside.
   The walker raycasts the real geometry, so the stairs work as stairs and the walls stop you.
+- **At someone's height.** Walk as Nato (2.00 m), Cindy (1.58 m) or Emi (1.28 m) and the
+  camera drops to their eye level. Standing them in the plan says the same thing from outside.
 - **Peel it apart.** Show the basement, the ground floor, or both; hide the roof; hide the site.
 - **Arrive at it.** The plot fronts a street, with a sliding gate on the driveway axis and a
   pedestrian gate on the entrance axis. Press *Watch the car arrive* and a car comes down the
@@ -105,6 +107,7 @@ The viewer keeps its state in the URL, so any view is a link you can send someon
 | `scheme` | `as-specified` `design-ideas` `warm-minimal` `dark-contrast` `white-model` | finishes |
 | `design` | `0` | take the design layer off |
 | `street` | `0` | hide the road and the gates |
+| `who` | `nato` `cindy` `emi` | whose eye height to walk at |
 | `ui` | `0` | hide the chrome, for embedding |
 | `lang` | `en` `pt` | interface language |
 | `labels` | `0` | hide the room names |
@@ -144,6 +147,7 @@ src/
     street.ts     carriageway, kerb, footpath, and the gates that open
     vehicle.ts    the car, built from an extruded side profile
     arrival.ts    the choreography: gate, ramp, garage door, park
+    people.ts     the three figures, proportioned from height and head count
     materials.ts  schemes → materials, incl. small procedural textures
     viewer.ts     renderer, camera, sun, orbit + walk controls
   main.ts         UI wiring

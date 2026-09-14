@@ -28,8 +28,9 @@ export class Viewer {
   private readonly keys = new Set<string>()
   private walkYaw = Math.PI
   private walkPitch = 0
-  private readonly walkPos = new THREE.Vector3(SIZE.width / 2, LEVELS.groundFloor + 1.65, SIZE.depth + 6)
+  private readonly walkPos = new THREE.Vector3(SIZE.width / 2, LEVELS.groundFloor + 1.68, SIZE.depth + 6)
   private pointerLocked = false
+  private moving = 0
   private lastFrame = performance.now()
   private readonly onFrame: Array<(dt: number) => void> = []
   private modeListener?: (mode: CameraMode) => void
@@ -176,6 +177,41 @@ export class Viewer {
     this.onFrame.push(fn)
   }
 
+  /** Eye height above the floor, in metres. Takes effect on the next frame. */
+  setEyeHeight(h: number) {
+    this.eye = h
+    // Re-stand immediately, or the camera keeps the old height until you move.
+    this.walkPos.y = this.eyeHeightAt(this.walkPos.x, this.walkPos.z, this.walkPos.y)
+  }
+
+  get eyeHeight() {
+    return this.eye
+  }
+
+  /** Where the walker is standing — the soles, not the eyes — and which way it faces. */
+  get walkStand(): THREE.Vector3 {
+    return new THREE.Vector3(this.walkPos.x, this.walkPos.y - this.eye, this.walkPos.z)
+  }
+
+  /**
+   * Stand the walker somewhere in plan. The height is found by dropping onto the geometry, so
+   * the caller only has to know where on the plan it wants to be, not what it will land on.
+   */
+  setWalkStand(x: number, z: number, yaw: number) {
+    this.walkPos.set(x, this.eyeHeightAt(x, z, LEVELS.groundFloor + 2), z)
+    this.walkYaw = yaw
+    this.walkPitch = 0
+  }
+
+  get walkHeading() {
+    return this.walkYaw
+  }
+
+  /** True on the frames the walker is actually moving, so an avatar can pick up its stride. */
+  get walkSpeed() {
+    return this.moving
+  }
+
   /**
    * Tell the walk camera what to stand on and what to bump into. Everything is found by
    * raycasting the real geometry, so the stairs work as stairs and the terraces as terraces
@@ -186,15 +222,21 @@ export class Viewer {
     this.obstacles = obstacles
   }
 
-  private static readonly EYE = 1.68
   private static readonly DOWN = new THREE.Vector3(0, -1, 0)
+
+  /**
+   * Height of the camera above whatever it is standing on. Defaults to an average adult;
+   * picking one of the family in the panel swaps in their own measured eye height, which is
+   * the point of the feature — a 2.60 m ceiling reads very differently at 1.19 m.
+   */
+  private eye = 1.68
 
   /**
    * Eye height for the walk camera: cast down from a little above the head and stand on the
    * first surface found. Falls back to the terrain when nothing is hit.
    */
   private eyeHeightAt(x: number, z: number, fromY: number): number {
-    const eye = Viewer.EYE
+    const eye = this.eye
     if (this.walkables.length) {
       this.ray.set(new THREE.Vector3(x, fromY + 0.9, z), Viewer.DOWN)
       this.ray.far = 6
@@ -254,6 +296,7 @@ export class Viewer {
     if (this.keys.has('KeyS') || this.keys.has('ArrowDown')) move.sub(forward)
     if (this.keys.has('KeyD') || this.keys.has('ArrowRight')) move.add(right)
     if (this.keys.has('KeyA') || this.keys.has('ArrowLeft')) move.sub(right)
+    const before = this.walkPos.clone()
     if (move.lengthSq() > 0) {
       const step = move.normalize().multiplyScalar(speed)
       // Slide along whatever is in the way rather than sticking to it.
@@ -266,6 +309,8 @@ export class Viewer {
         else if (alongZ.lengthSq() > 1e-8 && !this.blocked(alongZ)) this.walkPos.add(alongZ)
       }
     }
+
+    this.moving = dt > 0 ? Math.hypot(this.walkPos.x - before.x, this.walkPos.z - before.z) / dt : 0
 
     const targetY = this.eyeHeightAt(this.walkPos.x, this.walkPos.z, this.walkPos.y)
     this.walkPos.y += (targetY - this.walkPos.y) * Math.min(1, dt * 12)

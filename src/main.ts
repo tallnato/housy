@@ -8,6 +8,7 @@ import { SPOT_LEVELS } from './model/site'
 import { Viewer } from './scene/viewer'
 import { Car } from './scene/vehicle'
 import { Arrival } from './scene/arrival'
+import { PEOPLE, Person, personById } from './scene/people'
 import {
   LANGS,
   applyStatic,
@@ -61,6 +62,7 @@ function writeUrl() {
   if (!roofOn) p.set('roof', '0')
   if (!designOn) p.set('design', '0')
   if (!streetOn) p.set('street', '0')
+  if (person) p.set('who', person.spec.id)
   if (lib.current.id !== AS_SPECIFIED.id) p.set('scheme', lib.current.id)
   const q = p.toString()
   history.replaceState(null, '', q ? `?${q}` : location.pathname)
@@ -268,6 +270,81 @@ retranslators.push(paintWalkButton)
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && viewer.cameraMode === 'walk') setWalk(false)
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Who is walking
+// ─────────────────────────────────────────────────────────────────────────────
+
+// A 2.60 m ceiling and a 1.00 m window sill mean nothing on their own. Pick one of the family
+// and the walk camera drops to their eye height; standing them in the plan says the same thing
+// from outside. Both are the same figure — the avatar mirrors the walker, so what you see
+// standing there is where you will be when you press Walk.
+const peopleEl = $('#people')
+const peopleNote = $('#people-note')
+const defaultEye = viewer.eyeHeight
+let person: Person | null = null
+
+for (const spec of [null, ...PEOPLE]) {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.dataset.who = spec?.id ?? ''
+  // Names are names in either language; only the empty choice needs translating, and it is
+  // tagged so the language switch picks it up along with the rest of the static markup.
+  if (spec) b.textContent = spec.name
+  else {
+    b.dataset.i18n = 'ui.peopleNone'
+    b.textContent = t('ui.peopleNone')
+  }
+  peopleEl.append(b)
+}
+
+function paintPeople() {
+  const id = person?.spec.id ?? ''
+  for (const b of peopleEl.querySelectorAll('button')) b.classList.toggle('on', b.dataset.who === id)
+  peopleNote.textContent = person
+    ? t('ui.peopleNote')
+        .replace('{name}', person.spec.name)
+        .replace('{height}', tNumber(person.spec.height.toFixed(2)))
+        .replace('{eyes}', tNumber(person.spec.eyeHeight.toFixed(2)))
+    : ''
+}
+
+function setPerson(id: string | null) {
+  if (person) {
+    viewer.scene.remove(person.group)
+    person.dispose()
+    person = null
+  }
+  if (id) {
+    person = new Person(personById(id))
+    viewer.scene.add(person.group)
+    // Where walk mode starts from when you come in off an orbit view, so the figure is
+    // standing exactly where you would take over from it. Swapping who you are mid-walk must
+    // not teleport you back out to the terrace, though.
+    if (viewer.cameraMode !== 'walk') viewer.setWalkStand(5.5, SIZE.depth + 4.5, 0)
+  }
+  viewer.setEyeHeight(person?.spec.eyeHeight ?? defaultEye)
+  paintPeople()
+  writeUrl()
+}
+
+peopleEl.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button[data-who]') as HTMLButtonElement | null
+  if (!btn) return
+  setPerson(btn.dataset.who || null)
+})
+
+viewer.onTick((dt) => {
+  if (!person) return
+  // Hidden while you are inside its head; still stepped, so it settles out of its stride
+  // rather than snapping to attention the moment you leave.
+  person.group.visible = viewer.cameraMode === 'orbit'
+  person.group.position.copy(viewer.walkStand)
+  person.group.rotation.y = viewer.walkHeading
+  person.update(dt, viewer.cameraMode === 'walk' ? viewer.walkSpeed : 0)
+})
+
+retranslators.push(paintPeople)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Coming home
@@ -581,6 +658,10 @@ if (!camParam && wantedView && VIEWS[wantedView]) {
 } else if (!camParam && (wantedFloor === 'cave' || wantedFloor === 'ground')) {
   lookDownOn(wantedFloor)
 }
+
+const wantedWho = params.get('who')
+if (wantedWho && PEOPLE.some((p) => p.id === wantedWho)) setPerson(wantedWho)
+else paintPeople()
 
 paintWalkButton()
 paintArrivalButton()
