@@ -8,6 +8,12 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { LEVELS, SIZE } from '../model/house'
 import { groundAt } from '../model/site'
 
+/** Walk right through anything a parent marked passable — doorways, full-height glazing. */
+function passable(o: THREE.Object3D | null): boolean {
+  for (let n = o; n; n = n.parent) if (n.userData?.passable) return true
+  return false
+}
+
 export type CameraMode = 'orbit' | 'walk'
 
 export class Viewer {
@@ -26,6 +32,7 @@ export class Viewer {
   private pointerLocked = false
   private lastFrame = performance.now()
   private readonly onFrame: Array<(dt: number) => void> = []
+  private modeListener?: (mode: CameraMode) => void
 
   /** What the walk camera stands on and bumps into. */
   private walkables: THREE.Object3D[] = []
@@ -113,7 +120,13 @@ export class Viewer {
     this.scene.environmentIntensity = 0.55 + 0.5 * t
   }
 
+  /** Notified whenever the camera mode changes, including changes the viewer makes itself. */
+  onModeChange(fn: (mode: CameraMode) => void) {
+    this.modeListener = fn
+  }
+
   setMode(mode: CameraMode) {
+    const changed = this.mode !== mode
     this.mode = mode
     this.controls.enabled = mode === 'orbit'
     if (mode === 'walk') {
@@ -132,8 +145,9 @@ export class Viewer {
         this.walkPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1))
       } else {
         // Coming in from an orbit view: start on the path in front of the entrance, facing it.
+        // forward is (−sin yaw, 0, −cos yaw), so yaw 0 looks along −z — towards the house.
         this.walkPos.set(5.5, 0, SIZE.depth + 4.5)
-        this.walkYaw = Math.PI
+        this.walkYaw = 0
         this.walkPitch = -0.05
       }
       this.walkPos.y = this.eyeHeightAt(this.walkPos.x, this.walkPos.z, this.walkPos.y + 2)
@@ -141,12 +155,17 @@ export class Viewer {
     } else {
       document.exitPointerLock?.()
       // Leaving walk mode with a stale orbit target would spin the camera round a point
-      // somewhere behind it. Re-anchor on whatever the walker was facing.
+      // somewhere behind it. Re-anchor on whatever the walker was facing — flattened, because
+      // a target above the camera trips maxPolarAngle and OrbitControls teleports to obey it.
       const dir = new THREE.Vector3()
       this.camera.getWorldDirection(dir)
+      dir.y = 0
+      if (dir.lengthSq() < 1e-6) dir.set(0, 0, -1)
+      dir.normalize()
       this.controls.target.copy(this.camera.position).addScaledVector(dir, 6)
       this.controls.update()
     }
+    if (changed) this.modeListener?.(mode)
   }
 
   get cameraMode() {
@@ -195,7 +214,10 @@ export class Viewer {
     // Chest height — low enough to catch balustrades, high enough to clear a tread.
     this.ray.set(new THREE.Vector3(this.walkPos.x, this.walkPos.y - 0.5, this.walkPos.z), dir)
     this.ray.far = delta.length() + 0.3
-    return this.ray.intersectObjects(this.obstacles, true).length > 0
+    for (const hit of this.ray.intersectObjects(this.obstacles, true)) {
+      if (!passable(hit.object)) return true
+    }
+    return false
   }
 
   private bindInput() {
@@ -207,7 +229,11 @@ export class Viewer {
     addEventListener('blur', () => this.keys.clear())
 
     document.addEventListener('pointerlockchange', () => {
+      const was = this.pointerLocked
       this.pointerLocked = document.pointerLockElement === this.canvas
+      // Escape, or tabbing away, releases the lock. Leave walk mode with it, or the UI and
+      // the camera disagree about which mode you are in.
+      if (was && !this.pointerLocked && this.mode === 'walk') this.setMode('orbit')
     })
     this.canvas.addEventListener('click', () => {
       if (this.mode === 'walk' && !this.pointerLocked) this.canvas.requestPointerLock?.()

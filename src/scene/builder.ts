@@ -44,6 +44,12 @@ export interface HouseParts {
   /** Windows and doors, split by level so they hide with their floor. */
   glazingCave: THREE.Group
   glazingGround: THREE.Group
+  /** Just the room floor plates — what the walk camera stands on indoors. */
+  floors: THREE.Object3D[]
+  /** Paving and the driveway deck — what it stands on outdoors. */
+  paving: THREE.Group
+  /** Boundary and retaining walls — solid to the walker; the terrain itself is not. */
+  siteWalls: THREE.Group
   site: THREE.Group
   stairs: THREE.Group
 }
@@ -156,6 +162,10 @@ const FRAME = 0.06
 function buildGlazing(wall: Wall, o: Opening, lib: MaterialLibrary): THREE.Group | null {
   if (o.kind === 'door' || o.kind === 'opening') return null
   const g = new THREE.Group()
+  // Doorways and full-height glazing are things you walk through, so the walk camera skips
+  // them when testing collisions — otherwise the front door is a wall.
+  const floorLevel = wall.base ?? (wall.level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor)
+  g.userData.passable = o.kind === 'entrance' || o.kind === 'garage' || o.sill <= floorLevel + 0.05
   const frameMat = lib.get('frame')
   const glassMat = lib.get('glass')
   const width = o.to - o.from
@@ -331,6 +341,7 @@ const FLOOR_FINISH: Record<Room['kind'], SurfaceId> = {
 
 function buildRoomFloors(level: Level, lib: MaterialLibrary): THREE.Group {
   const g = new THREE.Group()
+  g.name = `floors-${level}`
   const z = level === 'cave' ? LEVELS.caveFloor : LEVELS.groundFloor
   for (const r of ROOMS) {
     if (r.level !== level) continue
@@ -616,10 +627,20 @@ function subdivide(geo: THREE.BufferGeometry, times: number): THREE.BufferGeomet
   return g
 }
 
-function buildSite(lib: MaterialLibrary): THREE.Group {
+interface Site {
+  group: THREE.Group
+  paving: THREE.Group
+  walls: THREE.Group
+}
+
+function buildSite(lib: MaterialLibrary): Site {
   const g = new THREE.Group()
   g.name = 'site'
-  g.add(buildGround(lib))
+  const paving = new THREE.Group()
+  const walls = new THREE.Group()
+  paving.name = 'paving'
+  walls.name = 'site-walls'
+  g.add(buildGround(lib), paving, walls)
 
   // Paving. The ground surface already carries the terraces and the ramp, so these are thin
   // slabs laid just above it rather than volumes of their own.
@@ -643,7 +664,7 @@ function buildSite(lib: MaterialLibrary): THREE.Group {
     m.rotation.x = -Math.PI / 2
     m.position.set(cx, 0, cy)
     m.receiveShadow = true
-    g.add(m)
+    paving.add(m)
   }
 
   pave(-2.2, SIZE.depth, 7.6, 14.6, paveMat) // entrance terrace
@@ -660,7 +681,7 @@ function buildSite(lib: MaterialLibrary): THREE.Group {
       const zFloor = Math.min(groundAt(x, ya), groundAt(x, yb))
       const zTop = groundAt(x + (x < DRIVEWAY.x1 ? -1.8 : 1.8), (ya + yb) / 2)
       const h = Math.max(0.12, zTop - zFloor)
-      g.add(mesh(box(DRIVEWAY.wallThickness, h, yb - ya), wallMat, x, zFloor + h / 2, (ya + yb) / 2))
+      walls.add(mesh(box(DRIVEWAY.wallThickness, h, yb - ya), wallMat, x, zFloor + h / 2, (ya + yb) / 2))
     }
   }
 
@@ -708,18 +729,18 @@ function buildSite(lib: MaterialLibrary): THREE.Group {
       const m = new THREE.Mesh(geo, wallMat)
       m.castShadow = true
       m.receiveShadow = true
-      g.add(m)
+      walls.add(m)
     } else {
       const posts = Math.max(2, Math.round(len / BOUNDARY.fence.postSpacing))
       for (let k = 0; k <= posts; k++) {
         const t = k / posts
         const px = x0 + (x1 - x0) * t
         const py = y0 + (y1 - y0) * t
-        g.add(mesh(box(0.1, height, 0.1), wallMat, px, groundAt(px, py) + height / 2, py))
+        walls.add(mesh(box(0.1, height, 0.1), wallMat, px, groundAt(px, py) + height / 2, py))
       }
     }
   }
-  return g
+  return { group: g, paving, walls }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -752,8 +773,12 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
     }
   }
 
-  cave.add(buildRoomFloors('cave', lib))
-  ground.add(buildRoomFloors('ground', lib))
+  const caveFloors = buildRoomFloors('cave', lib)
+  const groundFloors = buildRoomFloors('ground', lib)
+  cave.add(caveFloors)
+  ground.add(groundFloors)
+  // Referenced, not re-parented — Object3D.add() would pull them out of their own level.
+  const floors = [caveFloors, groundFloors]
 
   // Fixtures live inside their own level's group so they hide with it.
   const fixtures = buildFixtures(lib)
@@ -766,7 +791,7 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
   const stairs = buildStairs(lib)
   const site = buildSite(lib)
 
-  root.add(cave, ground, slabs.overCave, slabs.overGround, roof, glazingCave, glazingGround, stairs, site)
+  root.add(cave, ground, slabs.overCave, slabs.overGround, roof, glazingCave, glazingGround, stairs, site.group)
   root.name = 'house'
 
   return {
@@ -778,7 +803,10 @@ export function buildHouse(lib: MaterialLibrary): HouseParts {
     slabOverGround: slabs.overGround,
     glazingCave,
     glazingGround,
-    site,
+    floors,
+    paving: site.paving,
+    siteWalls: site.walls,
+    site: site.group,
     stairs,
   }
 }

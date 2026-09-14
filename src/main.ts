@@ -122,18 +122,17 @@ function lookDownOn(level: Level) {
 // Floors, slabs, stairs and the ground are what you stand on; walls and glazing are what you
 // bump into. Both are raycast against the real geometry, so nothing is described twice.
 viewer.setWalkGeometry(
-  [parts.cave, parts.ground, parts.slabOverCave, parts.stairs, parts.site],
-  [parts.cave, parts.ground, parts.glazingCave, parts.glazingGround, parts.site],
+  [...parts.floors, parts.slabOverCave, parts.stairs, parts.paving],
+  [parts.cave, parts.ground, parts.glazingCave, parts.glazingGround, parts.siteWalls],
 )
 
 const walkBtn = $<HTMLButtonElement>('#walk')
 const hud = $('#hud')
 
 function setWalk(on: boolean) {
+  // The chrome is updated by the onModeChange listener below, so this only has to deal with
+  // what walking requires of the model.
   viewer.setMode(on ? 'walk' : 'orbit')
-  walkBtn.classList.toggle('on', on)
-  walkBtn.textContent = on ? 'Leave walk mode' : 'Walk through the house'
-  hud.hidden = !on
   if (on) {
     roofOn = true
     floorMode = 'all'
@@ -148,6 +147,15 @@ walkBtn.addEventListener('click', () => {
   setWalk(viewer.cameraMode !== 'walk')
   // Otherwise the button keeps focus and the first Space or Enter throws you back out.
   walkBtn.blur()
+})
+
+// flyTo() and losing pointer lock both drop the viewer back to orbit on their own, so the
+// button and the HUD follow the viewer rather than the other way round.
+viewer.onModeChange((mode) => {
+  const on = mode === 'walk'
+  walkBtn.classList.toggle('on', on)
+  walkBtn.textContent = on ? 'Leave walk mode' : 'Walk through the house'
+  hud.hidden = !on
 })
 addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && viewer.cameraMode === 'walk') setWalk(false)
@@ -349,6 +357,11 @@ if (camParam) {
   if (atParam?.length === 3 && atParam.every(Number.isFinite)) {
     viewer.controls.target.set(atParam[0], atParam[1], atParam[2])
   }
+  // controls.update() re-derives the position from spherical coordinates and clamps the
+  // distance, so widen the limits to take whatever the link asked for.
+  const d = viewer.camera.position.distanceTo(viewer.controls.target)
+  viewer.controls.minDistance = Math.min(viewer.controls.minDistance, d)
+  viewer.controls.maxDistance = Math.max(viewer.controls.maxDistance, d)
   viewer.controls.update()
 }
 
