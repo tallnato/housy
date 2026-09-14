@@ -108,6 +108,9 @@ type FloorMode = 'all' | Level
 let floorMode: FloorMode = 'all'
 let roofOn = true
 
+// Tucked into the underside of the roof band, so it belongs to the roof and not to the walls.
+const cove = parts.exterior.getObjectByName('led-cove')
+
 function applyVisibility() {
   parts.cave.visible = floorMode !== 'ground'
   parts.ground.visible = floorMode !== 'cave'
@@ -122,6 +125,7 @@ function applyVisibility() {
   parts.slabOverGround.visible = !open
   parts.slabOverCave.visible = floorMode !== 'cave'
   parts.stairs.visible = true
+  if (cove) cove.visible = parts.roof.visible
 }
 
 $('#floors').addEventListener('click', (e) => {
