@@ -86,6 +86,22 @@
       </section>
 
       <section>
+        <h2 data-i18n="ui.specialties">Engineering</h2>
+        <p class="note" data-i18n="ui.specNote">
+          The specialty projects, drawn in the house. Tick a discipline to show it; open it for its layers and key facts.
+        </p>
+        <div class="seg spec-all" role="group">
+          <button type="button" id="spec-all" data-i18n="ui.specAll">All</button>
+          <button type="button" id="spec-none" data-i18n="ui.specNone">None</button>
+        </div>
+        <div id="specialties" class="specialties"></div>
+        <label class="check">
+          <input type="checkbox" id="spec-xray" checked /> <span data-i18n="ui.specXray">See through walls</span>
+        </label>
+        <button id="plan-open" class="wide" type="button" data-i18n="ui.specPlan">Open the 2D plan</button>
+      </section>
+
+      <section>
         <h2 data-i18n="ui.finishes">Finishes</h2>
         <div id="schemes" class="schemes"></div>
         <p class="note" id="scheme-note"></p>
@@ -101,6 +117,25 @@
         <ul id="rooms" class="rooms"></ul>
       </section>
     </aside>
+
+    <div class="plan2d" id="plan2d" hidden>
+      <header class="plan-bar">
+        <strong data-i18n="ui.specPlanTitle">2D plan</strong>
+        <div class="seg" id="plan-floors" role="group">
+          <button data-pfloor="cave" type="button" data-i18n="ui.floorCave">Basement</button>
+          <button data-pfloor="ground" type="button" class="on" data-i18n="ui.floorGround">Ground</button>
+          <button data-pfloor="roof" type="button" data-i18n="ui.floorRoof">Roof</button>
+        </div>
+        <span class="grow"></span>
+        <button id="plan-reset" type="button" class="ghost text" data-i18n="ui.specReset">Fit</button>
+        <button id="plan-save" type="button" class="ghost text" data-i18n="ui.specSave">Save SVG</button>
+        <button id="plan-close" type="button" class="ghost" data-i18n-attr="aria-label:ui.close" aria-label="Close">✕</button>
+      </header>
+      <div class="plan-body">
+        <div class="plan-canvas" id="plan-canvas"></div>
+        <aside class="plan-legend" id="plan-legend"></aside>
+      </div>
+    </div>
 
     <div class="hud" id="hud" hidden>
       <strong data-i18n="ui.hudWalking">Walking</strong>

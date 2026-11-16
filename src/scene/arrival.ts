@@ -37,15 +37,72 @@ const V_PARK = 1.0
 /** Centre of the near lane, as an offset out from the boundary line. */
 const LANE = OFFSET.channel + SECTION.carriageway / 4
 
-/** The driveway axis: the gate, the ramp and the garage door all share it. */
+/** The gate axis: where the car turns in off the street, between the two leaves. */
 const AXIS = (GATES.vehicle.x0 + GATES.vehicle.x1) / 2
+/** Centre line of the garage door in the left wall, and the car's parking spot inside. */
+const DOOR_Y = 2.85
+const PARK_X = 4.6
+/** The line the car follows down the ramp, as far to the left as the boundary wall allows. */
+const RAMP_X = -3.2
+/** Turning radius of the single forward swing on the forecourt. */
+const TURN_R = 3.0
+
+const smooth = (t: number) => {
+  const u = Math.min(1, Math.max(0, t))
+  return u * u * (3 - 2 * u)
+}
+
+/**
+ * The whole route as plan points (x, y), in driving order: along the street, in at the gate,
+ * down the ramp (drifting left to make room for the turn), round on the forecourt, through the
+ * garage door and in to the parking spot.
+ */
+export function arrivalRoute(): Array<[number, number]> {
+  const lane = (x: number) => frontBoundaryY(x) + LANE
+  const gateY = frontBoundaryY(AXIS)
+  // The turn-in is a handful of points rather than one corner: a Catmull-Rom pulled through a
+  // right angle overshoots into the neighbour's frontage on the way round.
+  const wp: Array<[number, number]> = [
+    [AXIS - 34, lane(AXIS - 34)],
+    [AXIS - 16, lane(AXIS - 16)],
+    [AXIS - 7.0, lane(AXIS - 7.0)],
+    [AXIS - 3.0, lane(AXIS - 3.0) - 0.55],
+    [AXIS - 0.35, gateY + 2.7],
+    [AXIS, gateY + 0.7],
+    [AXIS, gateY - 1.0],
+  ]
+  const curve = new THREE.CatmullRomCurve3(wp.map(([x, y]) => new THREE.Vector3(x, 0, y)), false, 'catmullrom', 0.3)
+  const pts: Array<[number, number]> = []
+  for (let i = 0; i <= 260; i++) {
+    const p = curve.getPoint(i / 260)
+    pts.push([p.x, p.z])
+  }
+
+  // Down the ramp: straight on through the gate, then eased across to the left flank.
+  const yA = DOOR_Y + TURN_R
+  const y1 = gateY - 2.6
+  for (let y = y1; y > yA; y -= 0.25) {
+    pts.push([AXIS + (RAMP_X - AXIS) * smooth((y1 - y) / (y1 - yA)), y])
+  }
+  // The swing: a quarter circle about a centre to the right of the car, ending in line with
+  // the door and heading +x.
+  const cx = RAMP_X + TURN_R
+  const N = 24
+  for (let i = 0; i <= N; i++) {
+    const a = ((Math.PI / 2) * i) / N
+    pts.push([cx - TURN_R * Math.cos(a), DOOR_Y + TURN_R - TURN_R * Math.sin(a)])
+  }
+  // Through the door and in to the spot.
+  for (let x = cx + 0.25; x < PARK_X; x += 0.25) pts.push([x, DOOR_Y])
+  pts.push([PARK_X, DOOR_Y])
+  return pts
+}
 
 type Phase = 'idle' | 'driving' | 'settling' | 'closing' | 'done'
 
 export class Arrival {
   readonly group = new THREE.Group()
 
-  private readonly curve: THREE.CatmullRomCurve3
   /** Arc-length table, so the car travels at a speed rather than at a `t`. */
   private readonly samples: THREE.Vector3[] = []
   private readonly lengths: number[] = []
@@ -72,51 +129,36 @@ export class Arrival {
     this.group.add(car.group)
     this.group.visible = false
 
-    const lane = (x: number) => frontBoundaryY(x) + LANE
     const gateY = frontBoundaryY(AXIS)
-    // The turn-in is four points rather than one corner: a Catmull-Rom pulled through a right
-    // angle overshoots into the neighbour's frontage on the way round.
-    const wp: Array<[number, number]> = [
-      [AXIS - 34, lane(AXIS - 34)],
-      [AXIS - 16, lane(AXIS - 16)],
-      [AXIS - 7.0, lane(AXIS - 7.0)],
-      [AXIS - 3.0, lane(AXIS - 3.0) - 0.55],
-      [AXIS - 0.35, gateY + 2.7],
-      [AXIS, gateY + 0.7],
-      [AXIS, gateY - 1.2],
-      [AXIS, DRIVEWAY.yTop],
-      [AXIS, 12.4],
-      [AXIS, SIZE.depth],
-      [AXIS, 8.6],
-      [AXIS, 6.9],
-    ]
-    this.curve = new THREE.CatmullRomCurve3(
-      wp.map(([x, y]) => new THREE.Vector3(x, 0, y)),
-      false,
-      'catmullrom',
-      0.3,
-    )
+    const route = arrivalRoute()
+    this.samples = route.map(([x, y]) => new THREE.Vector3(x, 0, y))
 
-    // Tabulate arc length once. 700 samples over about 50 m is finer than anything the eye
-    // catches at these speeds.
-    const N = 700
+    // Tabulate arc length once. The route is already dense, so this is a polyline.
     let run = 0
-    let prev = this.curve.getPoint(0)
-    this.samples.push(prev.clone())
     this.lengths.push(0)
-    for (let i = 1; i <= N; i++) {
-      const p = this.curve.getPoint(i / N)
-      run += p.distanceTo(prev)
-      this.samples.push(p.clone())
+    for (let i = 1; i < this.samples.length; i++) {
+      run += this.samples[i].distanceTo(this.samples[i - 1])
       this.lengths.push(run)
-      prev = p
     }
     this.total = run
 
     this.sGate = this.distanceAtPlanY(gateY)
-    this.sDoor = this.distanceAtPlanY(SIZE.depth)
+    this.sDoor = this.distanceAtPlanX(0)
 
     this.reset()
+  }
+
+  /** Where the path first crosses a given plan x going the +x way — the garage door. */
+  private distanceAtPlanX(x: number): number {
+    for (let i = 1; i < this.samples.length; i++) {
+      const a = this.samples[i - 1].x
+      const b = this.samples[i].x
+      if (a < x && b >= x && this.samples[i].z < 8) {
+        const f = (x - a) / (b - a)
+        return this.lengths[i - 1] + (this.lengths[i] - this.lengths[i - 1]) * f
+      }
+    }
+    return this.total
   }
 
   /** Where the path first reaches a given plan y, as a distance along it. */
@@ -150,21 +192,24 @@ export class Arrival {
    * Height of the surface under a wheel. Three surfaces meet on this route and none of them is
    * the plain terrain: the carriageway is crowned, the footpath is a plane from the boundary up
    * to the kerb — dished across the crossing, which is the only reason a car can cross it —
-   * and inside the façade it is the garage slab. `groundAt()` covers the plot itself, ramp
-   * included. The garage lip is blended over a metre rather than stepped, or the car visibly
-   * hops through the door.
+   * and inside the left wall it is the garage slab. `groundAt()` covers the plot itself, ramp
+   * included.
    */
   private deckAt(x: number, y: number): number {
-    if (y <= SIZE.depth - 0.6) return LEVELS.caveFloor
     const b = frontBoundaryY(x)
     let z: number
-    if (y <= b) z = groundAt(x, y)
-    else if (y <= b + OFFSET.kerbFace) z = footpathLevelAt(x, y)
+    if (y <= b) {
+      // Inside the walls the garage slab takes over; across the door's sill it is blended over
+      // a metre, or the car visibly hops through the opening.
+      if (y < SIZE.depth && x >= -0.5) {
+        const f = THREE.MathUtils.clamp((x + 0.5) / 1.0, 0, 1)
+        return groundAt(x, y) + (LEVELS.caveFloor - groundAt(x, y)) * f
+      }
+      z = groundAt(x, y)
+    } else if (y <= b + OFFSET.kerbFace) z = footpathLevelAt(x, y)
     else if (y <= b + OFFSET.channel) z = kerbTopAt(x)
     else z = roadLevelAt(x, y)
-    if (y >= SIZE.depth + 0.4) return z
-    const f = (y - (SIZE.depth - 0.6)) / 1.0
-    return LEVELS.caveFloor + (z - LEVELS.caveFloor) * f
+    return z
   }
 
   reset() {
@@ -210,6 +255,7 @@ export class Arrival {
     if (toPark < 3.5) return V_PARK
     if (toDoor < 6) return V_RAMP
     if (toGate < 9) return V_TURN
+    if (this.s > this.sGate) return V_RAMP
     if (toGate < 22) return V_TURN + (V_ROAD - V_TURN) * ((toGate - 9) / 13)
     return V_ROAD
   }
@@ -233,7 +279,7 @@ export class Arrival {
     // The gate is called well before the car needs it; the door once the car is through the
     // gate and committed to the ramp.
     if (this.sGate - this.s < 24) this.gate = Math.min(1, this.gate + dt / GATE_TIME)
-    if (this.s > this.sGate - 2 && this.sDoor - this.s < 11) this.door = Math.min(1, this.door + dt / DOOR_TIME)
+    if (this.s > this.sGate && this.sDoor - this.s < 13) this.door = Math.min(1, this.door + dt / DOOR_TIME)
     this.hooks.setVehicleGate(this.gate)
     this.hooks.setGarageDoor(this.door)
 
@@ -325,9 +371,9 @@ export class Arrival {
   /**
    * Where to put the camera to watch. Three shots, because one rig cannot cover the whole run:
    * a wide from across the road while the car is still on the street and the gate is running,
-   * a chase down the turn-in and the ramp, and a fixed shot from the corner of the garage once
-   * the car is through the door — there is 2.60 m of headroom in there, so a chase camera has
-   * nowhere to be that is not either inside the slab or buried in the ramp behind it.
+   * a chase down the ramp and round the forecourt, and a fixed shot from the far side of the
+   * garage once the car is through the door — there is 2.60 m of headroom in there, so a chase
+   * camera has nowhere to be that is not either inside the slab or buried in the ramp.
    */
   cameraFrame(): { position: THREE.Vector3; target: THREE.Vector3 } {
     const p = this.pointAt(this.s)
@@ -342,21 +388,21 @@ export class Arrival {
       return { position: new THREE.Vector3(cx, this.deckAt(cx, cy) + 2.0, cy), target }
     }
 
-    if (p.z < SIZE.depth - 0.4) {
-      // Standing at the far corner of the garage, so the car comes towards the camera with the
-      // door closing behind it. Any nearer and a 4.7 m car fills the frame.
-      const cx = GATES.vehicle.x1 - 0.3
-      return { position: new THREE.Vector3(cx, LEVELS.caveFloor + 1.6, 1.9), target }
+    if (p.x > -0.8) {
+      // Standing at the far end of the garage, so the car comes towards the camera out of the
+      // doorway. Any nearer and a 4.7 m car fills the frame.
+      return { position: new THREE.Vector3(11.5, LEVELS.caveFloor + 1.6, 1.9), target }
     }
 
-    const down = THREE.MathUtils.clamp((DRIVEWAY.yTop - p.z) / 4.0, 0, 1)
-    const back = 8.4 - 2.2 * down
-    const side = 1.8 * (1 - down)
-    const cx = p.x + Math.sin(this.heading) * back + Math.cos(this.heading) * side
-    const cz = p.z + Math.cos(this.heading) * back - Math.sin(this.heading) * side
-    // Hold the camera above whatever is under *it*, not under the car: down the ramp the two
-    // are more than a metre apart and the difference is the depth of the trench.
-    const cy = Math.max(y + 3.6 - 1.4 * down, this.deckAt(cx, cz) + 1.6)
+    // Down the ramp the camera follows from behind and above, closing in as the car levels out
+    // on the forecourt.
+    const down = THREE.MathUtils.clamp((DRIVEWAY.yTop - p.z) / (DRIVEWAY.yTop - DRIVEWAY.yBottom), 0, 1)
+    const back = 8.4 - 2.4 * down
+    const cx = p.x + Math.sin(this.heading) * back
+    const cz = p.z + Math.cos(this.heading) * back
+    // Hold the camera above whatever is under *it*, not under the car: behind the car on the
+    // ramp the ground is higher, and in the turn it is the boundary side of the flank.
+    const cy = Math.max(y + 3.6 - 1.2 * down, this.deckAt(cx, cz) + 1.6)
     return { position: new THREE.Vector3(cx, cy, cz), target }
   }
 }

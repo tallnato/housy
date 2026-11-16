@@ -14,8 +14,8 @@
  */
 
 import * as THREE from 'three'
-import { ALL_WALLS, LEVELS, ROOF_EDGE, SIZE, type Opening, type Wall } from '../model/house'
-import { DRIVEWAY, ENTRANCE, groundAt } from '../model/site'
+import { ALL_WALLS, CAVE_WALLS, LEVELS, ROOF_EDGE, SIZE, type Opening, type Wall } from '../model/house'
+import { ENTRANCE, groundAt } from '../model/site'
 import type { MaterialLibrary } from './materials'
 
 const box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d)
@@ -229,12 +229,9 @@ function blockedSpans(face: Face): Array<[number, number]> {
       if (walkOut) spans.push([o.from - 0.2, o.to + 0.2])
     }
   }
-  if (face === 'front') {
-    spans.push([ENTRANCE.platform.x0 - 0.2, ENTRANCE.platform.x1 + 0.2])
-    // The driveway trench and its retaining walls take the whole width in front of the garage;
-    // there is no ground at the foot of the wall there to stand a fitting on.
-    spans.push([DRIVEWAY.x0 - DRIVEWAY.wallThickness - 0.1, DRIVEWAY.x1 + DRIVEWAY.wallThickness + 0.1])
-  }
+  if (face === 'front') spans.push([ENTRANCE.platform.x0 - 0.2, ENTRANCE.platform.x1 + 0.2])
+  // The driveway runs down the whole left flank, so nothing stands at the foot of that wall.
+  if (face === 'left') spans.push([-1, SIZE.depth + 1])
   return spans
 }
 
@@ -326,9 +323,19 @@ function balustraded(): Array<{ face: Face; o: Opening }> {
 // The sectional garage door
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * The vehicle opening, as the plan states it. Revision 4 put it in the left flank near the rear
+ * corner, so the door is built in the frame it was first written for — a front wall, leaf
+ * running in x, travelling back in −z — and then turned a quarter round onto the flank.
+ */
+const GARAGE_OPENING = (() => {
+  for (const w of CAVE_WALLS) for (const o of w.openings ?? []) if (o.kind === 'garage') return { wall: w, o }
+  throw new Error('no garage opening on the basement plan')
+})()
+
 const GARAGE = {
-  from: 8.404,
-  to: 13.005,
+  from: GARAGE_OPENING.o.from,
+  to: GARAGE_OPENING.o.to,
   sill: LEVELS.caveFloor,
   head: 0.59,
   sections: 5,
@@ -461,6 +468,17 @@ export function buildGarageDoor(lib: MaterialLibrary): GarageDoor {
     },
   }
   door.setOpen(0)
+
+  // Turn the front-wall frame onto the wall the opening is actually in. A −90° turn about y
+  // takes (x, z) to (−z, x): the leaf's run lands on plan y and "inwards" (−z) becomes +x.
+  const w = GARAGE_OPENING.wall
+  if (w.run === 'y' && w.at < SIZE.width / 2) {
+    group.rotation.y = -Math.PI / 2
+    group.position.x = SIZE.depth
+  } else if (w.run === 'y') {
+    group.rotation.y = Math.PI / 2
+    group.position.set(SIZE.width - SIZE.depth, 0, 0)
+  }
   return door
 }
 

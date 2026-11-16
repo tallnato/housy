@@ -20,12 +20,18 @@ and published as a static site.
 - **At someone's height.** Walk as Nato (2.00 m), Cindy (1.58 m) or Emi (1.28 m) and the
   camera drops to their eye level. Standing them in the plan says the same thing from outside.
 - **Peel it apart.** Show the basement, the ground floor, or both; hide the roof; hide the site.
-- **Arrive at it.** The plot fronts a street, with a sliding gate on the driveway axis and a
-  pedestrian gate on the entrance axis. Press *Watch the car arrive* and a car comes down the
-  road, waits for the gate, descends the ramp and parks once the garage door is up.
+- **Arrive at it.** The plot fronts a street, with a double swing gate at the left end of the
+  frontage and a pedestrian gate on the entrance path. Press *Watch the car arrive* and a car
+  comes down the road, waits for the gate, drives down the ramp along the left flank and turns
+  into the garage through the side door once it is up.
 
   ![The street frontage, with both gates shut](docs/street.png)
 
+- **See the engineering.** The specialty projects — water supply, wastewater, rainwater,
+  electrical, telecoms (ITED), HVAC and structure — are drawn into the house, each network at
+  the height it runs at, through the walls if you want. Switch disciplines and their layers on
+  one by one, read the key facts from each project's written part, or open the **2D plan** for
+  the same layers over a clean floor plan you can pan, zoom and save as SVG.
 - **Try finishes.** Switch the whole house between material schemes.
 - **See the design ideas.** A second layer, from the owner's reference renders rather than
   from the drawings: furniture, timber slat cladding, an eaves cove light, glass Juliet
@@ -70,6 +76,11 @@ standing, so a reveal has real depth and there is no CSG in the pipeline.
 
 ### Where the numbers came from
 
+The architecture follows **revision 4** of the drawings (the DWG), which is the source of truth
+where it differs from the earlier PDF set: the garage door moved from the front wall to the left
+flank, reached by a ramp down that side from a new gate at the left end of the frontage, and the
+basement front wall gained two windows in its place.
+
 The dimensions were read out of the **vector geometry inside the PDF drawing set**, not traced
 off pixels. The drawings' scale was confirmed as exactly 1:100 (1 pt = 35.2778 mm) by measuring
 the roof outline against its printed 14.00 × 10.50 m dimension, and every level was
@@ -111,6 +122,9 @@ The viewer keeps its state in the URL, so any view is a link you can send someon
 | `design` | `0` | take the design layer off |
 | `street` | `0` | hide the road and the gates |
 | `who` | `nato` `cindy` `emi` | whose eye height to walk at |
+| `spec` | `agua,esgotos,…` | engineering disciplines to show |
+| `xray` | `0` | draw the networks behind walls instead of through them |
+| `plan` | `cave` `ground` `roof` | open the 2D plan on that floor |
 | `ui` | `0` | hide the chrome, for embedding |
 | `lang` | `en` `pt` | interface language |
 | `labels` | `0` | hide the room names |
@@ -153,6 +167,11 @@ src/
     people.ts     the three figures, proportioned from height and head count
     materials.ts  schemes → materials, incl. small procedural textures
     viewer.ts     renderer, camera, sun, orbit + walk controls
+  data/
+    specialties/  one JSON per engineering discipline, in house coordinates, + notes.json
+  model/specialties.ts   loads them
+  scene/specialties.ts   draws them in 3D (screen-space lines, structural solids)
+  ui/plan2d.ts    the 2D plan (SVG) with the same layers
   main.ts         UI wiring
 ```
 
@@ -199,6 +218,9 @@ This repository is public, so it deliberately contains **no location and no pers
 - No address, street, parish, municipality, land-registry reference or map coordinate appears
   anywhere in the code or the UI.
 - No owner, architect or certificate details.
+- The engineering networks in `src/data/specialties/` were extracted from georeferenced CAD
+  files and stored **only in the house's own coordinates**, with title blocks, legends and
+  every name stripped. The written-part notes carry technical facts only.
 - The plot outline in `src/model/site.ts` is stored purely as **offsets from the house's own
   corner** — a shape, with nothing to pin it to a map. Neighbouring buildings are not modelled
   at all.

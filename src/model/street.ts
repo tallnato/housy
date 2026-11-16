@@ -108,7 +108,7 @@ export const GATE = {
   slatGap: 0.015,
   /** How far behind the boundary line the leaves hang, clear of the wall and of the piers. */
   setback: 0.2,
-  /** The sliding leaf laps each pier by this much when it is shut. */
+  /** Where the two vehicle leaves meet, each laps the other by half of this when shut. */
   lap: 0.06,
   /** A swinging leaf keeps this much clear of each jamb. */
   jambGap: 0.01,
@@ -116,18 +116,16 @@ export const GATE = {
   swing: 95,
   /** Rendered piers each side, stated as what stands above the paving. */
   pier: { size: 0.3, height: 2.1, coping: 0.06 },
-  /** Ground rail the sliding leaf runs on. */
-  rail: { width: 0.09, height: 0.05 },
 }
 
 export const GATES: Record<'vehicle' | 'pedestrian', Gate> = {
   /**
-   * On the driveway axis, and exactly as wide as the deck between the trench's retaining
-   * walls — anything narrower would leave the ramp aiming at a pier.
+   * Revision 4: at the left end of the frontage, on the axis of the ramp down the left flank.
+   * A pair of 2.00 m leaves, hung on the outer jambs and swinging in over the head of the ramp.
    */
-  vehicle: { x0: DRIVEWAY.x0, x1: DRIVEWAY.x1, note: 'slides in +x, behind the wall' },
-  /** On the entrance axis, in front of the foot of the steps at x 2.502. */
-  pedestrian: { x0: 1.65, x1: 2.75, note: 'swings in, hung on its east jamb' },
+  vehicle: { x0: -3.532, x1: 0.468, note: 'two leaves swinging in, hung on the outer jambs' },
+  /** On the entrance path, which runs from here to the foot of the steps. */
+  pedestrian: { x0: 1.15, x1: 2.35, note: 'swings in, hung on its west jamb' },
 }
 
 /**
@@ -211,13 +209,12 @@ export interface Path {
 
 /**
  * Sett paving inside the boundary, carrying each gate to something already paved. Only these
- * two strips are missing: the entrance terrace stops at y 14.6 and the driveway deck at the
- * head of the ramp. The vehicle one climbs hard — the apron pad in `site.ts` ends at y 15.2 and
+ * two strips are missing: between each gate and the paving behind it. The vehicle one climbs hard — the apron pad in `site.ts` ends at y 15.2 and
  * the ground behind the gate is 0.36 m above it — but that hump is the site surface's, and it
  * is better paved than left as grass under a gate.
  */
 export const PATHS: Path[] = [
-  { gate: GATES.pedestrian, yInner: 14.6, note: 'gate to the entrance terrace' },
+  { gate: GATES.pedestrian, yInner: 15.9, note: 'gate to the entrance path' },
   { gate: GATES.vehicle, yInner: DRIVEWAY.yTop, note: 'gate to the head of the ramp' },
 ]
 

@@ -273,59 +273,38 @@ export function buildStreet(lib: MaterialLibrary): StreetParts {
     group.add(m)
   }
 
-  // ── The vehicle gate. It slides rather than swings: the 5.2 m of wall between the opening
-  // and the front-right corner is just enough to take the leaf, which finishes 0.09 m short of
-  // the corner. The leaf runs behind the wall line, so it passes the piers rather than fouling
-  // them, and it rides the ground: the fall under it is 2.4 %, which a rigid leaf on a level
-  // rail would show as a wedge of daylight at one end.
+  // ── The gates. Each leaf hangs from a pivot at its jamb and swings in (towards −y), so the
+  // open leaves stand over the head of the ramp, clear of the street. `side` = +1 for a leaf
+  // hung on its west jamb (extends towards +x), −1 for one hung on its east jamb.
   const gateLine = (x: number) => b(x) - GATE.setback
-  const v = GATES.vehicle
-  const vWidth = v.x1 - v.x0 + 2 * GATE.lap
-  const vShut = (v.x0 + v.x1) / 2
-  const vTravel = v.x1 - v.x0 + GATE.lap
-  const vLeaf = gateLeaf(vWidth)
-  solid.add(vLeaf)
-
-  let vehicleOpen = 0
-  const placeVehicle = () => {
-    const cx = vShut + vTravel * vehicleOpen
-    const ha = groundAt(cx - vWidth / 2, gateLine(cx - vWidth / 2))
-    const hb = groundAt(cx + vWidth / 2, gateLine(cx + vWidth / 2))
-    vLeaf.position.set(cx, (ha + hb) / 2 + GATE.clearance, gateLine(cx))
-    vLeaf.rotation.z = Math.atan2(hb - ha, vWidth)
+  const hang = (hingeX: number, width: number, side: 1 | -1) => {
+    const pivot = new THREE.Group()
+    pivot.position.set(hingeX, groundAt(hingeX, gateLine(hingeX)) + GATE.clearance, gateLine(hingeX))
+    const leaf = gateLeaf(width)
+    leaf.position.x = (side * width) / 2
+    pivot.add(leaf)
+    solid.add(pivot)
+    return pivot
   }
 
-  // Its guide rail, laid on the ground for the length of the travel.
-  const railX0 = vShut - vWidth / 2
-  const railX1 = Math.min(FRONTAGE.x1 - 0.1, vShut + vTravel + vWidth / 2)
-  const railA = groundAt(railX0, gateLine(railX0))
-  const railB = groundAt(railX1, gateLine(railX1))
-  const railMid = (railX0 + railX1) / 2
-  const rail = mesh(
-    box(Math.hypot(railX1 - railX0, railB - railA), GATE.rail.height, GATE.rail.width),
-    anthracite,
-    railMid,
-    (railA + railB) / 2 + GATE.rail.height / 2 - 0.02,
-    gateLine(railMid),
-  )
-  rail.rotation.z = Math.atan2(railB - railA, railX1 - railX0)
-  group.add(rail)
+  // Vehicle gate: a pair, hung on the outer jambs and meeting in the middle.
+  const v = GATES.vehicle
+  const vWidth = (v.x1 - v.x0) / 2 - GATE.jambGap - GATE.lap / 2
+  const vehicleLeaves = [hang(v.x0 + GATE.jambGap, vWidth, 1), hang(v.x1 - GATE.jambGap, vWidth, -1)]
+  let vehicleOpen = 0
+  const placeVehicle = () => {
+    const a = vehicleOpen * GATE.swing * (Math.PI / 180)
+    vehicleLeaves[0].rotation.y = a
+    vehicleLeaves[1].rotation.y = -a
+  }
 
-  // ── The pedestrian gate, hung on its east jamb so the open leaf stands clear of the line
-  // between the opening and the foot of the entrance steps.
+  // Pedestrian gate: a single leaf hung on its west jamb, so it opens along the path.
   const p = GATES.pedestrian
   const pWidth = p.x1 - p.x0 - 2 * GATE.jambGap
-  const hinge = p.x1 - GATE.jambGap
-  const pivot = new THREE.Group()
-  pivot.position.set(hinge, groundAt(hinge, gateLine(hinge)) + GATE.clearance, gateLine(hinge))
-  const pLeaf = gateLeaf(pWidth)
-  pLeaf.position.x = -pWidth / 2
-  pivot.add(pLeaf)
-  solid.add(pivot)
-
+  const pivot = hang(p.x0 + GATE.jambGap, pWidth, 1)
   let pedestrianOpen = 0
   const placePedestrian = () => {
-    pivot.rotation.y = -pedestrianOpen * GATE.swing * (Math.PI / 180)
+    pivot.rotation.y = pedestrianOpen * GATE.swing * (Math.PI / 180)
   }
 
   placeVehicle()

@@ -9,6 +9,9 @@ import { ENTRANCE_X, Viewer } from './scene/viewer'
 import { Car } from './scene/vehicle'
 import { Arrival } from './scene/arrival'
 import { PEOPLE, Person, personById } from './scene/people'
+import { DISCIPLINES, disciplineColour } from './model/specialties'
+import { SpecialtyLayers } from './scene/specialties'
+import { Plan2D, type PlanFloor } from './ui/plan2d'
 import {
   LANGS,
   applyStatic,
@@ -47,6 +50,11 @@ const lib = new MaterialLibrary(AS_SPECIFIED)
 const parts = buildHouse(lib)
 viewer.scene.add(parts.root)
 
+// The engineering networks, laid into the same scene. Built once; switched per discipline.
+const specs = new SpecialtyLayers()
+viewer.scene.add(specs.group)
+let siteOn = true
+
 /** Parameters that are applied once at load and are not controls; carried through verbatim. */
 const PASSTHROUGH = ['view', 'cam', 'at', 'ui'] as const
 
@@ -64,6 +72,9 @@ function writeUrl() {
   if (!streetOn) p.set('street', '0')
   if (person) p.set('who', person.spec.id)
   if (lib.current.id !== AS_SPECIFIED.id) p.set('scheme', lib.current.id)
+  if (specs.enabled.size) p.set('spec', [...specs.enabled].join(','))
+  if (!specs.xrayOn) p.set('xray', '0')
+  if (planOpen) p.set('plan', planFloor)
   const q = p.toString()
   history.replaceState(null, '', q ? `?${q}` : location.pathname)
 }
@@ -126,6 +137,7 @@ function applyVisibility() {
   parts.slabOverCave.visible = floorMode !== 'cave'
   parts.stairs.visible = true
   if (cove) cove.visible = parts.roof.visible
+  specs.setContext(floorMode, siteOn)
 }
 
 $('#floors').addEventListener('click', (e) => {
@@ -144,7 +156,9 @@ $<HTMLInputElement>('#roof-on').addEventListener('change', (e) => {
   writeUrl()
 })
 $<HTMLInputElement>('#site-on').addEventListener('change', (e) => {
-  parts.site.visible = (e.target as HTMLInputElement).checked
+  siteOn = (e.target as HTMLInputElement).checked
+  parts.site.visible = siteOn
+  applyVisibility()
 })
 
 // The street is outside the plot, so it hides on its own switch rather than with the site.
@@ -187,6 +201,169 @@ parts.street.group.visible = streetOn
   if (lib.current.id === from) selectScheme(to)
   writeUrl()
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Engineering specialties — in 3D, and on a 2D plan
+// ─────────────────────────────────────────────────────────────────────────────
+
+const specEl = $('#specialties')
+const specRows: Array<() => void> = []
+const specChecks = new Map<string, HTMLInputElement>()
+
+for (const d of DISCIPLINES) {
+  const item = document.createElement('details')
+  item.className = 'spec-item'
+  const summary = document.createElement('summary')
+  const cb = document.createElement('input')
+  cb.type = 'checkbox'
+  cb.disabled = d.layers.length === 0
+  specChecks.set(d.id, cb)
+  const sw = document.createElement('span')
+  sw.className = 'spec-swatch'
+  sw.style.background = disciplineColour(d)
+  const name = document.createElement('span')
+  const count = document.createElement('span')
+  count.className = 'count'
+  if (d.layers.length) count.textContent = String(d.layers.length)
+  summary.append(cb, sw, name, count)
+
+  const body = document.createElement('div')
+  body.className = 'spec-body'
+  const layerLabels: Array<{ span: HTMLSpanElement; layer: (typeof d.layers)[number]; label: HTMLLabelElement }> = []
+  for (const layer of d.layers) {
+    const label = document.createElement('label')
+    label.className = 'check'
+    const lcb = document.createElement('input')
+    lcb.type = 'checkbox'
+    lcb.checked = true
+    lcb.addEventListener('change', () => {
+      specs.setLayer(layer.id, lcb.checked)
+      plan.render()
+    })
+    const bar = document.createElement('i')
+    bar.style.background = layer.color
+    const span = document.createElement('span')
+    label.append(lcb, bar, span)
+    body.append(label)
+    layerLabels.push({ span, layer, label })
+  }
+  const empty = document.createElement('p')
+  empty.className = 'note'
+  if (!d.layers.length) body.append(empty)
+  const factsTitle = document.createElement('h3')
+  const facts = document.createElement('ul')
+  if (d.notes) body.append(factsTitle, facts)
+
+  item.append(summary, body)
+  specEl.append(item)
+
+  cb.addEventListener('change', () => {
+    specs.setDiscipline(d.id, cb.checked)
+    plan.render()
+    writeUrl()
+  })
+
+  specRows.push(() => {
+    const L = lang()
+    name.textContent = d.name[L]
+    if (d.summary?.[L]) summary.title = d.summary[L]
+    for (const { span, layer, label } of layerLabels) {
+      span.textContent = layer.name[L]
+      label.title = layer.note?.[L] ?? ''
+    }
+    empty.textContent = t('ui.specNoDrawings')
+    factsTitle.textContent = t('ui.specFacts')
+    facts.replaceChildren(
+      ...(d.notes?.[L] ?? []).map((n) => {
+        const li = document.createElement('li')
+        li.textContent = n
+        return li
+      }),
+    )
+  })
+}
+const paintSpecs = () => specRows.forEach((fn) => fn())
+retranslators.push(paintSpecs)
+
+function setDisciplines(ids: Iterable<string>) {
+  const want = new Set(ids)
+  for (const [id, cb] of specChecks) {
+    const on = want.has(id) && !cb.disabled
+    cb.checked = on
+    specs.setDiscipline(id, on)
+  }
+  plan.render()
+  writeUrl()
+}
+$('#spec-all').addEventListener('click', () => setDisciplines(specChecks.keys()))
+$('#spec-none').addEventListener('click', () => setDisciplines([]))
+
+const xrayToggle = $<HTMLInputElement>('#spec-xray')
+xrayToggle.addEventListener('change', () => {
+  specs.setXray(xrayToggle.checked)
+  writeUrl()
+})
+
+viewer.onTick(() => specs.setResolution(canvas.clientWidth, canvas.clientHeight))
+
+// The 2D plan.
+const planEl = $('#plan2d')
+let planOpen = false
+let planFloor: PlanFloor = 'ground'
+const plan = new Plan2D(
+  $('#plan-canvas'),
+  {
+    get floor() {
+      return planFloor
+    },
+    isOn: (id) => specs.enabled.has(id),
+    isLayerOn: (id) => specs.isLayerOn(id),
+  },
+  $('#plan-legend'),
+)
+
+function paintPlanFloors() {
+  for (const b of $('#plan-floors').querySelectorAll<HTMLButtonElement>('button')) {
+    b.classList.toggle('on', b.dataset.pfloor === planFloor)
+  }
+}
+
+function setPlan(open: boolean) {
+  planOpen = open
+  planEl.hidden = !open
+  if (open) {
+    if (viewer.cameraMode === 'walk') setWalk(false)
+    // Open on the floor being looked at, if one is isolated.
+    if (floorMode !== 'all') planFloor = floorMode
+    paintPlanFloors()
+    plan.render()
+  }
+  writeUrl()
+}
+
+$('#plan-open').addEventListener('click', () => setPlan(true))
+$('#plan-close').addEventListener('click', () => setPlan(false))
+$('#plan-reset').addEventListener('click', () => plan.resetView())
+$('#plan-floors').addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button[data-pfloor]') as HTMLButtonElement | null
+  if (!btn) return
+  planFloor = btn.dataset.pfloor as PlanFloor
+  paintPlanFloors()
+  plan.render()
+  writeUrl()
+})
+$('#plan-save').addEventListener('click', () => {
+  const blob = new Blob([plan.exportSvg()], { type: 'image/svg+xml' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `plan-${planFloor}.svg`
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+})
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && planOpen) setPlan(false)
+})
+retranslators.push(() => planOpen && plan.render())
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Viewpoints
@@ -636,6 +813,22 @@ if (params.get('roof') === '0') {
 }
 
 applyVisibility()
+
+const wantedSpecs = params.get('spec')?.split(',').filter(Boolean)
+if (params.get('xray') === '0') {
+  xrayToggle.checked = false
+  specs.setXray(false)
+}
+paintSpecs()
+if (wantedSpecs?.length) setDisciplines(wantedSpecs)
+const wantedPlan = params.get('plan')
+if (wantedPlan === 'cave' || wantedPlan === 'ground' || wantedPlan === 'roof') {
+  planFloor = wantedPlan
+  setPlan(true)
+  planFloor = wantedPlan
+  paintPlanFloors()
+  plan.render()
+}
 
 // `?cam=x,y,z&at=x,y,z` places the camera exactly, for linking to a specific view.
 const rawCam = params.get('cam')?.split(',').map(Number)

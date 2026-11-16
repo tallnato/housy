@@ -1,0 +1,164 @@
+{
+  "agua": {
+    "pt": [
+      "Ligação à rede pública com contador num nicho do muro de vedação, com válvula de retenção e passador de segurança.",
+      "Tubagens em PPR para água fria e quente, Ø20 a Ø40 mm; saídas de torneiras Ø15 mm (banheira, tanque e lava-loiça Ø20 mm).",
+      "Água quente por bomba de calor com depósito de 300 L (COP 3,77; 2,6 kW), instalada na lavandaria da cave.",
+      "Pressão residual mínima de 8 a 10 mca nos pontos mais desfavoráveis, com cálculo hidráulico por ramal.",
+      "Passadores de corte por sector (entradas de casas de banho e cozinhas) para isolar avarias sem parar o resto.",
+      "Tubagens de água quente isoladas com lã de vidro e separadas pelo menos 5 cm das de água fria."
+    ],
+    "en": [
+      "Public-network connection with the meter in a wall niche on the boundary wall, with a check valve and a safety shut-off.",
+      "PPR pipework for cold and hot water, Ø20 to Ø40 mm; tap outlets Ø15 mm (bath, laundry tub and sink Ø20 mm).",
+      "Hot water from a heat pump with a 300 L tank (COP 3.77; 2.6 kW), installed in the basement laundry room.",
+      "Minimum residual pressure of 8 to 10 mca at the most unfavourable points, hydraulic calculation per branch.",
+      "Isolation valves per zone (bathroom and kitchen inlets) so a fault can be isolated without shutting down the rest.",
+      "Hot-water pipes wrapped in glass wool and kept at least 5 cm apart from cold-water pipes."
+    ]
+  },
+  "esgotos": {
+    "pt": [
+      "Esgoto da cave elevado por poço de bombagem com 2 bombas submersíveis (1 em serviço + 1 de reserva) e alarme luminoso e sonoro.",
+      "Poço de bombagem Ø1,20 m, com 1,50 m de altura útil; conduta elevatória em PVC Ø50 mm.",
+      "Ramais de descarga em PVC rígido embebidos nos pavimentos, com declives de 10 a 40 mm/m; sifões em todos os aparelhos.",
+      "Tubos de queda em PVC com ventilação secundária, prolongada até 1,00 m acima da ligação mais alta.",
+      "Caixas de pavimento em PVC com tampas roscadas; colectores prediais enterrados com câmaras de inspecção."
+    ],
+    "en": [
+      "Basement wastewater lifted by a pumping sump with 2 submersible pumps (1 duty + 1 standby) and a visual and audible alarm.",
+      "Pumping sump Ø1.20 m, 1.50 m usable height; PVC rising main Ø50 mm.",
+      "Rigid PVC discharge branches cast into the floors, falling 10 to 40 mm/m; traps on every fixture.",
+      "PVC soil stacks with secondary venting, extended to 1.00 m above the highest connection.",
+      "PVC floor boxes with screwed caps; buried drain collectors with inspection chambers."
+    ]
+  },
+  "pluviais": {
+    "pt": [
+      "Águas das coberturas recolhidas por caleiras semicirculares em PVC e encaminhadas por tubos de queda em PVC.",
+      "Dimensionamento para chuvada com período de retorno de 5 anos (zona pluviométrica A, duração de 5 min).",
+      "Águas abaixo da cota da rua elevadas por poço de bombagem Ø1,00 m, com 2 bombas submersíveis (1 + 1) e conduta Ø50 mm.",
+      "Caixas de areia em alvenaria, com depósito retentor de 10 cm e tampas de ferro fundido com vedação hidráulica.",
+      "Troço do tubo de queda até 2 m acima do passeio em ferro galvanizado protegido contra a corrosão, por estar em via pública."
+    ],
+    "en": [
+      "Roof water collected by semicircular PVC gutters and carried down PVC downpipes.",
+      "Sized for a 5-year return period rainfall (pluviometric zone A, 5-minute duration).",
+      "Water below street level lifted by a Ø1.00 m pumping sump with 2 submersible pumps (1 + 1) and a Ø50 mm rising main.",
+      "Masonry sand traps with a 10 cm settling sump and cast-iron covers with a watertight seal.",
+      "Downpipe section up to 2 m above the pavement in galvanised steel with corrosion protection, as it runs along the public road."
+    ]
+  },
+  "avac": {
+    "pt": [
+      "Aquecimento por salamandra a pellet de 22,1 kW térmicos, rendimento nominal de 89,2 % e acendimento automático.",
+      "Distribuição de água quente por radiadores, em tubagem de cobre com isolamento de 10 mm; termóstato em cada divisão.",
+      "Sem sistema de arrefecimento previsto para a moradia.",
+      "Ventilação natural com entradas de ar nas fachadas de salas e quartos e exaustão forçada nas casas de banho.",
+      "Taxa de renovação de ar de 0,60 h⁻¹ (mínimo regulamentar de 0,50 h⁻¹); exaustor de cozinha com conduta Ø150 mm até à cobertura."
+    ],
+    "en": [
+      "Space heating by a pellet stove rated 22.1 kW thermal, 89.2 % nominal efficiency, with automatic ignition.",
+      "Radiators fed by water pipework in copper with 10 mm insulation; a thermostat in each room.",
+      "No cooling system planned for the house.",
+      "Natural ventilation through wall air inlets in living rooms and bedrooms, with mechanical extraction in the bathrooms.",
+      "Air change rate of 0.60 h⁻¹ (regulatory minimum 0.50 h⁻¹); cooker hood duct Ø150 mm up to the roof."
+    ]
+  },
+  "eletricidade": {
+    "pt": [
+      "Alimentação monofásica a 230 V, com potência contratada de 10,35 kVA.",
+      "Quadro elétrico na garagem da cave, junto ao posto de carregamento de veículo elétrico.",
+      "Circuito dedicado ao carregamento de VE (mín. 3,68 kVA), com disjuntor diferencial tipo A 40 A / 30 mA.",
+      "Tomada de VE fixa, com o bordo entre 0,5 m e 1,5 m do pavimento, e proteção contra sobreintensidades.",
+      "Terra de proteção com resistência inferior a 50 Ω; quadros com grau de proteção mínimo IP40 e IK09."
+    ],
+    "en": [
+      "Single-phase 230 V supply with a contracted power of 10.35 kVA.",
+      "Distribution board in the basement garage, next to the electric-vehicle charging point.",
+      "Dedicated circuit for EV charging (min. 3.68 kVA), with a type A residual-current breaker, 40 A / 30 mA.",
+      "Fixed EV socket with its lower edge 0.5 m to 1.5 m above the floor, with overcurrent protection.",
+      "Protective earth below 50 Ω; boards and enclosures rated at least IP40 and IK09."
+    ]
+  },
+  "ited": {
+    "pt": [
+      "Entrada subterrânea de 1 tubo PEAD Ø40 mm, enterrado a 0,80 m de profundidade, até ao armário de telecomunicações (ATI).",
+      "ATI a 1,5 m do pavimento, com espaço para equipamento ativo e tomada de 230 V com terra.",
+      "Rede em estrela com pares de cobre Cat. 6, cabo coaxial e fibra óptica; tubagem individual de Ø25 mm mínimo.",
+      "Zona de Acesso Privilegiado com 2 tomadas de cada tecnologia; tomadas de cobre (RJ45) e de TV na cozinha e nos quartos.",
+      "Proteção diferencial de 300 mA no quadro elétrico que alimenta o ATI."
+    ],
+    "en": [
+      "Underground entry of 1 PEAD Ø40 mm duct, buried 0.80 m deep, running to the telecom cabinet (ATI).",
+      "ATI mounted 1.5 m above the floor, with space for active equipment and an earthed 230 V socket.",
+      "Star network with Cat. 6 copper pairs, coaxial cable and optical fibre; individual ducting at least Ø25 mm.",
+      "Privileged Access Zone with 2 outlets per technology; copper (RJ45) and TV outlets in the kitchen and bedrooms.",
+      "300 mA residual-current protection on the consumer unit that feeds the ATI."
+    ]
+  },
+  "scie": {
+    "pt": [
+      "Habitação unifamiliar de 1.ª categoria de risco, com área bruta de 294 m² (cave e rés-do-chão), sem elevador.",
+      "Elementos estruturais com resistência ao fogo R30 / REI30; paredes de empena EI60 e cobertura REI30.",
+      "Via de acesso com 7,0 m de largura útil e marco de incêndio a 30 m da saída do edifício.",
+      "Deteção e extintores não assinalados na ficha de SCIE; medidas de autoproteção ainda por detalhar."
+    ],
+    "en": [
+      "Single-family house in fire-risk category 1, 294 m² gross area (basement and ground floor), no lift.",
+      "Structural elements with fire resistance R30 / REI30; gable walls EI60 and roof REI30.",
+      "Access road 7.0 m clear width, with a fire hydrant 30 m from the building exit.",
+      "Fire detection and extinguishers not marked on the fire-safety form; self-protection measures still to be detailed."
+    ]
+  },
+  "estrutura": {
+    "pt": [
+      "Betão armado C25/30 (fck 25 MPa, agregado de quartzito até 15 mm) e aço A400 NR, com cálculo segundo os Eurocódigos 2 e 8.",
+      "Fundações diretas: sapatas contínuas de 1,25 m sob as paredes e sapatas isoladas quadradas de 0,95 m a 1,60 m de lado.",
+      "Lajes aligeiradas de vigotas e blocos, com 25 cm de espessura.",
+      "Sobrecargas de projeto de 2,0 kN/m² nos pisos e 1,0 kN/m² na cobertura; vento na zona A (27 m/s).",
+      "Sismo: zona tipo 1 e solo tipo C, com ductilidade baixa; tensão admissível do terreno de 0,20 MPa (0,30 MPa em acidental)."
+    ],
+    "en": [
+      "Reinforced concrete C25/30 (fck 25 MPa, quartzite aggregate up to 15 mm) and A400 NR reinforcing steel, designed to Eurocodes 2 and 8.",
+      "Direct foundations: 1.25 m wide continuous footings under the walls and square isolated footings from 0.95 m to 1.60 m side.",
+      "Lightened slabs of joists and infill blocks, 25 cm thick.",
+      "Design live loads of 2.0 kN/m² on floors and 1.0 kN/m² on the roof; wind zone A (27 m/s).",
+      "Seismic: type 1 zone and soil type C, low ductility class; allowable ground pressure 0.20 MPa (0.30 MPa accidental)."
+    ]
+  },
+  "termica": {
+    "pt": [
+      "Necessidades nominais de aquecimento de 33,1 kWh/m².ano (limite 55,6) e de arrefecimento de 5,0 (limite 9,6).",
+      "Energia primária Ntc de 15,6 kWhEP/m².ano, cerca de 18 % do limite regulamentar Nt de 85,9.",
+      "Transmitâncias U: paredes exteriores 0,37, cobertura 0,30, pavimento interior 0,32 W/m².°C; envidraçados Uw 1,90.",
+      "Caixilharia de alumínio com corte térmico e vidro duplo (6 mm + laminado 44,1 mm + caixa de ar 16 mm), com estores exteriores.",
+      "Água quente por bomba de calor de 300 L (COP 3,77), que cobre 100 % das necessidades anuais.",
+      "Zona climática I2 / V2, com 1 337 graus-dia de aquecimento."
+    ],
+    "en": [
+      "Nominal heating need of 33.1 kWh/m².year (limit 55.6) and cooling need of 5.0 (limit 9.6).",
+      "Primary energy Ntc of 15.6 kWhPE/m².year, about 18 % of the regulatory limit Nt of 85.9.",
+      "U-values: external walls 0.37, roof 0.30, interior floor 0.32 W/m².°C; windows Uw 1.90.",
+      "Aluminium window frames with thermal break and double glazing (6 mm + 44.1 mm laminated + 16 mm air gap), with external blinds.",
+      "Domestic hot water from a 300 L heat pump (COP 3.77), covering 100 % of the annual demand.",
+      "Climate zone I2 / V2, with 1,337 heating degree-days."
+    ]
+  },
+  "acustica": {
+    "pt": [
+      "Isolamento sonoro de fachada D2m,nT,w calculado de 40,9 dB, acima do mínimo regulamentar de 36 dB.",
+      "Massa superficial de 541 kg/m² nas paredes exteriores e de 186 kg/m² nas paredes interiores.",
+      "Pavimento entre a garagem e os compartimentos habitáveis, com DnT,w calculado de 51,6 dB (mínimo 50 dB).",
+      "Caixilharia de alumínio termolacado com vidro duplo e índice de isolamento Rw mínimo de 35 dB.",
+      "Aglomerado de cortiça de 3 cm nas juntas das paredes divisórias, para eliminar transmissões marginais."
+    ],
+    "en": [
+      "Calculated façade sound insulation D2m,nT,w of 40.9 dB, above the regulatory minimum of 36 dB.",
+      "Surface mass of 541 kg/m² for the external walls and 186 kg/m² for the internal walls.",
+      "Floor between the garage and the habitable rooms, calculated DnT,w of 51.6 dB (minimum 50 dB).",
+      "Thermally lacquered aluminium frames with double glazing and a minimum sound reduction index Rw of 35 dB.",
+      "3 cm cork agglomerate at the joints of the partition walls, to eliminate flanking transmission."
+    ]
+  }
+}

@@ -14,7 +14,7 @@
 
 import * as THREE from 'three'
 import { SIZE } from '../model/house'
-import { DRIVEWAY, groundAt } from '../model/site'
+import { groundAt, inDriveway } from '../model/site'
 import type { MaterialLibrary } from './materials'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,17 +59,9 @@ function rng(seed: number): () => number {
 
 const between = (r: () => number, a: number, b: number) => a + (b - a) * r()
 
-function place(geo: THREE.BufferGeometry, mat: THREE.Material, x: number, y: number, z: number): THREE.Mesh {
-  const m = new THREE.Mesh(geo, mat)
-  m.position.set(x, y, z)
-  m.castShadow = true
-  m.receiveShadow = true
-  return m
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Where everything goes. Plan coordinates throughout, all of them checked clear of
-// the house, the entrance steps, the driveway trench and the paved rear yard.
+// the house, the entrance steps, the driveway ramp and the paved rear yard.
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface HedgeRun {
@@ -83,16 +75,10 @@ interface HedgeRun {
  * so a two-point run set 0.5 m inside it tracks the wall to within a centimetre.
  */
 const HEDGES: readonly HedgeRun[] = [
-  { path: [[-3.4, 15.94], [7.5, 16.02]], height: 0.62, width: 0.5 }, // inside the front wall
-  { path: [[14.2, 16.07], [17.8, 16.1]], height: 0.62, width: 0.5 }, // ...and east of the vehicle gate
-  { path: [[-2.45, 10.9], [-2.45, 14.85], [0.9, 14.91]], height: 0.48, width: 0.42 }, // terrace edge
+  // Inside the front wall, from the east pier of the pedestrian gate (x 2.35 + 0.3) to the
+  // front-right corner. The vehicle gate (x -3.53…0.47) and the pedestrian gate stay clear.
+  { path: [[3.2, 15.98], [17.8, 16.1]], height: 0.62, width: 0.5 },
 ]
-
-/**
- * The one bed that lands on paving rather than lawn: a low kerbed strip at the foot of the
- * front wall, west of the entrance steps. Everything else is planted straight into the grass.
- */
-const TERRACE_BED = { x0: 0.15, y0: 10.56, x1: 2.4, y1: 11.45, height: 0.14 }
 
 interface ShrubRow {
   a: readonly [number, number]
@@ -105,22 +91,18 @@ interface ShrubRow {
 }
 
 const SHRUB_ROWS: readonly ShrubRow[] = [
-  { a: [-0.8, 1.3], b: [-0.8, 9.5], count: 7 }, // at the foot of the west flank
   { a: [SIZE.width + 0.8, 1.3], b: [SIZE.width + 0.8, 9.5], count: 7 }, // ...and the east flank
   { a: [0.6, -5.2], b: [13.4, -5.2], count: 6 }, // edging the rear yard, clear of its paving
-  { a: [0.6, 11.05], b: [1.9, 11.05], count: 3, size: 0.75, lift: TERRACE_BED.height },
-  { a: [DRIVEWAY.x1 + 0.75, 11.2], b: [DRIVEWAY.x1 + 0.75, 14.0], count: 4 }, // outside the drive wall
+  { a: [9.0, 11.6], b: [13.2, 11.6], count: 5 }, // the freed front-right lawn
+  { a: [9.8, 14.3], b: [13.0, 14.6], count: 4 },
   { a: [14.7, 14.5], b: [17.3, 14.35], count: 3 }, // under the boundary hedge, east of the gate
 ]
 
 const GRASS_TUFTS: ReadonlyArray<readonly [number, number]> = [
-  [-3.3, 15.0], // the strip between the terrace and the left boundary
-  [-3.5, 11.4],
-  [-3.9, 6.2], // down the west flank
-  [-3.2, 2.4],
-  [-4.6, -1.8],
-  [15.4, 11.4], // front lawn, east of the driveway
+  [15.4, 11.4], // front lawn
   [17.4, 14.1],
+  [9.0, 13.2],
+  [13.8, 12.9],
   [18.3, 9.4], // down the east flank
   [16.6, 2.8],
   [19.4, -1.2],
@@ -136,8 +118,7 @@ interface Tree {
 }
 
 const TREES: readonly Tree[] = [
-  { kind: 'olive', x: -2.7, y: 7.8, height: 3.2 }, // beside the west flank
-  { kind: 'olive', x: 16.3, y: 12.4, height: 2.9 }, // front lawn, east of the driveway
+  { kind: 'olive', x: 16.3, y: 12.4, height: 2.9 }, // front lawn
   { kind: 'olive', x: 17.1, y: 5.4, height: 3.4 }, // east flank
   { kind: 'conifer', x: -4.6, y: -8.4, height: 6.0 }, // rear-left corner of the plot
   { kind: 'conifer', x: 20.4, y: -6.4, height: 5.4 }, // rear-right corner
@@ -396,25 +377,12 @@ function conifer(t: Tree, r: () => number): THREE.Group {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Hedges, shrubs and trees, laid on the finished ground. */
-export function buildPlanting(lib: MaterialLibrary): THREE.Group {
+export function buildPlanting(_lib: MaterialLibrary): THREE.Group {
   const g = new THREE.Group()
   g.name = 'planting'
   const r = rng(0x5eed17)
 
   for (const run of HEDGES) g.add(buildHedge(run))
-
-  const b = TERRACE_BED
-  const bx = (b.x0 + b.x1) / 2
-  const by = (b.y0 + b.y1) / 2
-  g.add(
-    place(
-      new THREE.BoxGeometry(b.x1 - b.x0, b.height, b.y1 - b.y0),
-      lib.get('terrace'),
-      bx,
-      groundAt(bx, by) + b.height / 2,
-      by,
-    ),
-  )
 
   for (const row of SHRUB_ROWS) {
     const [ax, ay] = row.a
@@ -428,12 +396,12 @@ export function buildPlanting(lib: MaterialLibrary): THREE.Group {
       const across = between(r, -0.12, 0.12)
       const x = ax + (px - ax) * t + ux * along - uy * across
       const y = ay + (py - ay) * t + uy * along + ux * across
-      g.add(shrub(x, y, row.size ?? 1, row.lift ?? 0, r))
+      if (!inDriveway(x, y)) g.add(shrub(x, y, row.size ?? 1, row.lift ?? 0, r))
     }
   }
 
-  for (const [x, y] of GRASS_TUFTS) g.add(grassTuft(x, y, r))
-  for (const t of TREES) g.add(t.kind === 'olive' ? olive(t, r) : conifer(t, r))
+  for (const [x, y] of GRASS_TUFTS) if (!inDriveway(x, y)) g.add(grassTuft(x, y, r))
+  for (const t of TREES) if (!inDriveway(t.x, t.y)) g.add(t.kind === 'olive' ? olive(t, r) : conifer(t, r))
 
   return g
 }

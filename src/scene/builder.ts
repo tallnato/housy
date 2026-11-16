@@ -26,7 +26,7 @@ import {
   type Room,
   type Wall,
 } from '../model/house'
-import { BOUNDARY, DRIVEWAY, ENTRANCE, PLOT, groundAt } from '../model/site'
+import { BOUNDARY, DRIVEWAY, ENTRANCE, PLOT, drivewayLevelAt, drivewayRightX, groundAt, leftBoundaryX } from '../model/site'
 import { inGateOpening } from '../model/street'
 import { buildStreet, type StreetParts } from './street'
 import { buildExterior, type GarageDoor } from './exterior'
@@ -741,21 +741,47 @@ function buildSite(lib: MaterialLibrary): Site {
     paving.add(m)
   }
 
-  pave(-2.2, SIZE.depth, 7.6, 14.6, paveMat) // entrance terrace
+  pave(1.0, SIZE.depth, 2.7, 15.93, paveMat) // entrance path, gate to the foot of the steps
+  pave(2.7, SIZE.depth, 7.6, 13.2, paveMat) // terrace along the front
   pave(-2.6, -4.4, 16.8, 0, paveMat) // rear yard
-  pave(DRIVEWAY.x0, DRIVEWAY.yBottom, DRIVEWAY.x1, DRIVEWAY.yTop, lib.get('driveway'))
+  // The driveway deck: forecourt and ramp in one sheet, laid in strips across its width so
+  // its left edge can follow the boundary wall, which is not square to the house.
+  {
+    const d = DRIVEWAY
+    const rows = Math.ceil((d.yTop - d.court.y0) / 0.25)
+    const verts: number[] = []
+    const edge = (y: number): [number, number] => [leftBoundaryX(y) + BOUNDARY.wall.thickness / 2, drivewayRightX(y - 1e-6)]
+    for (let i = 0; i < rows; i++) {
+      const ya = d.court.y0 + ((d.yTop - d.court.y0) * i) / rows
+      const yb = d.court.y0 + ((d.yTop - d.court.y0) * (i + 1)) / rows
+      const [la, ra] = edge(ya)
+      const [lb, rb] = edge(yb)
+      const za = drivewayLevelAt(ya) + 0.02
+      const zb = drivewayLevelAt(yb) + 0.02
+      verts.push(la, za, ya, lb, zb, yb, rb, zb, yb, la, za, ya, rb, zb, yb, ra, za, ya)
+    }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3))
+    geo.computeVertexNormals()
+    const deck = new THREE.Mesh(geo, lib.get('driveway'))
+    deck.receiveShadow = true
+    paving.add(deck)
+  }
 
-  // Retaining walls either side of the driveway trench, as drawn on the basement plan.
+  // The retaining wall between the ramp and the entrance path, standing from the deck to the
+  // path level beside it, with a 0.15 m upstand.
   const wallMat = lib.get('boundaryWall')
-  for (const x of [DRIVEWAY.x0 - DRIVEWAY.wallThickness / 2, DRIVEWAY.x1 + DRIVEWAY.wallThickness / 2]) {
-    const steps = 10
+  {
+    const d = DRIVEWAY
+    const x = d.frontWallX + d.wallThickness / 2
+    const steps = 12
     for (let i = 0; i < steps; i++) {
-      const ya = DRIVEWAY.yBottom + ((DRIVEWAY.yTop - DRIVEWAY.yBottom) * i) / steps
-      const yb = DRIVEWAY.yBottom + ((DRIVEWAY.yTop - DRIVEWAY.yBottom) * (i + 1)) / steps
-      const zFloor = Math.min(groundAt(x, ya), groundAt(x, yb))
-      const zTop = groundAt(x + (x < DRIVEWAY.x1 ? -1.8 : 1.8), (ya + yb) / 2)
-      const h = Math.max(0.12, zTop - zFloor)
-      walls.add(mesh(box(DRIVEWAY.wallThickness, h, yb - ya), wallMat, x, zFloor + h / 2, (ya + yb) / 2))
+      const ya = SIZE.depth + ((d.yTop - SIZE.depth) * i) / steps
+      const yb = SIZE.depth + ((d.yTop - SIZE.depth) * (i + 1)) / steps
+      const zFloor = Math.min(drivewayLevelAt(ya), drivewayLevelAt(yb))
+      const zTop = groundAt(x + 0.6, (ya + yb) / 2) + 0.15
+      const h = Math.max(0.15, zTop - zFloor)
+      walls.add(mesh(box(d.wallThickness, h, yb - ya), wallMat, x, zFloor + h / 2, (ya + yb) / 2))
     }
   }
 

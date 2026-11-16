@@ -323,8 +323,11 @@ export const CAVE_WALLS: Wall[] = [
     to: SIZE.width,
     thickness: SIZE.wallExt,
     exterior: true,
+    // Revision 4 moved the garage door round to the left flank; the front wall now carries two
+    // windows lined up under the ground-floor ones, 0.80 m tall under the common head.
     openings: [
-      { from: 8.404, to: 13.005, sill: LEVELS.caveFloor, head: C_HEAD, kind: 'garage', label: 'Garage door' },
+      { from: 8.75, to: 9.75, sill: C_HEAD - 0.8, head: C_HEAD, kind: 'window', label: 'Garage' },
+      { from: 11.25, to: 13.25, sill: C_HEAD - 0.8, head: C_HEAD, kind: 'window', label: 'Garage' },
     ],
   },
   {
@@ -336,11 +339,11 @@ export const CAVE_WALLS: Wall[] = [
     to: SIZE.depth - SIZE.wallExt,
     thickness: SIZE.wallExt,
     exterior: true,
-    // The two left-hand windows share a head but not a sill: the elevation draws the wider
-    // one 1.20 m tall and the narrower one 1.00 m.
+    // Revision 4: the vehicle door is here now, 4.00 m wide near the rear corner, reached down a
+    // ramp that runs along this flank from the street. It replaces the old garage window.
     openings: [
-      { from: 4.751, to: 6.751, sill: C_HEAD - 1.2, head: C_HEAD, kind: 'window', label: 'Garage' },
-      { from: 7.951, to: 9.451, sill: C_HEAD - 1.0, head: C_HEAD, kind: 'window', label: 'Bathroom / laundry' },
+      { from: 0.85, to: 4.85, sill: LEVELS.caveFloor, head: C_HEAD, kind: 'garage', label: 'Garage door' },
+      { from: 7.95, to: 9.45, sill: C_HEAD - 1.0, head: C_HEAD, kind: 'window', label: 'Bathroom / laundry' },
     ],
   },
   {

@@ -39,7 +39,8 @@ export const SPOT_LEVELS = [
   { z: 0.469, note: 'paving inside the front boundary' },
   { z: 0.369, note: 'front terrace' },
   { z: 1.519, note: 'entrance platform' },
-  { z: -0.07, note: 'head of the garage ramp' },
+  { z: 0.53, note: 'head of the garage ramp, at the gate' },
+  { z: -1.71, note: 'forecourt in front of the garage door' },
   { z: -0.79, note: 'left flank, mid-depth' },
   { z: -1.02, note: 'right flank, mid-depth' },
   { z: -1.711, note: 'rear yard' },
@@ -86,37 +87,63 @@ interface Pad {
 
 const PADS: Pad[] = [
   // Entrance terrace across the front of the house, at the foot of the steps
-  { x0: -2.5, y0: 10.4, x1: 7.6, y1: 15.2, z: 0.47, falloff: 2.0, note: 'entrance terrace' },
-  // Apron at the head of the driveway, in front of the garage
-  { x0: 7.9, y0: 13.9, x1: 13.5, y1: 15.2, z: -0.07, falloff: 1.0, note: 'head of the ramp' },
+  { x0: 1.0, y0: 10.4, x1: 7.6, y1: 15.2, z: 0.47, falloff: 2.0, note: 'entrance terrace' },
   // Rear yard, cut down so the basement opens onto it at grade
   { x0: -4.5, y0: -6.5, x1: 18.5, y1: 0.4, z: -1.69, falloff: 2.6, note: 'rear yard' },
 ]
 
 /**
- * The driveway ramp. It drops from the apron at the head, in front of the plot, down to the
- * garage door in the front wall at x 8.404…13.005.
+ * The driveway, as revision 4 of the drawings has it.
  *
- * The gradient is steep — the drawings show the trench cut within about 4 m of the façade —
- * so it is modelled as drawn rather than smoothed out.
+ * The vehicle gate is at the left end of the frontage. From it a ramp runs straight down the
+ * left flank, between the boundary wall and the house, to a level forecourt at basement level
+ * in front of the garage door — which is now in the left wall, near the rear corner. The left
+ * elevation dimensions both ends: +0.53 at the gate and −1.71 on the forecourt, and draws the
+ * ramp as one even fall between y 5.70 and the gate.
+ *
+ * In plan the deck is bounded on the left by the boundary wall and on the right by the house
+ * wall alongside the house, then by a retaining wall at x 0.80 in front of it, which holds the
+ * entrance path up at terrace level.
  */
 export const DRIVEWAY = {
-  /** Clear deck between the retaining walls — 5.006 m, as the basement plan dimensions it. */
-  x0: 8.199,
-  x1: 13.205,
-  /** Retaining walls stand outside that, 0.20 m thick. */
+  /** The level forecourt in front of the garage door, out from the rear corner. */
+  court: { y0: -0.6, y1: 5.7, z: LEVELS.caveFloor - 0.1 },
+  /** The foot of the ramp, at the forecourt. */
+  yBottom: 5.7,
+  zBottom: LEVELS.caveFloor - 0.1,
+  /** The head of the ramp, at the gate line. */
+  yTop: 16.25,
+  zTop: 0.5,
+  /** Retaining wall between the deck and the entrance path, in front of the house. */
+  frontWallX: 0.8,
   wallThickness: 0.2,
-  /** Ramp head, at the apron level. */
-  yTop: 14.654,
-  zTop: -0.07,
-  /** Bottom, level with the garage floor, just outside the door. */
-  yBottom: 10.501,
-  zBottom: LEVELS.caveFloor - 0.05,
-  /**
-   * How far the cut blends back into the ground. Deliberately tight: the trench is held by
-   * the retaining walls, so it should not slope out into the terrace beside it.
-   */
+  /** How far the cut blends into the ground off the open (rear) end of the forecourt. */
   falloff: 0.45,
+}
+
+/** Plan x of the left boundary line at a given y. */
+export function leftBoundaryX(y: number): number {
+  const [xa, ya] = PLOT[0]
+  const [xb, yb] = PLOT[1]
+  return xa + ((xb - xa) * (y - ya)) / (yb - ya)
+}
+
+/** The deck's right-hand edge: the house wall alongside the house, the retaining wall in front. */
+export function drivewayRightX(y: number): number {
+  return y < SIZE.depth ? 0 : DRIVEWAY.frontWallX
+}
+
+/** Finished level of the driveway deck (forecourt or ramp) at a given y. */
+export function drivewayLevelAt(y: number): number {
+  const d = DRIVEWAY
+  if (y <= d.yBottom) return d.court.z
+  const t = Math.min(1, (y - d.yBottom) / (d.yTop - d.yBottom))
+  return d.zBottom + (d.zTop - d.zBottom) * t
+}
+
+/** True inside the driveway deck, forecourt included. */
+export function inDriveway(x: number, y: number): boolean {
+  return y >= DRIVEWAY.court.y0 && y <= DRIVEWAY.yTop + 0.3 && x >= leftBoundaryX(y) - 0.3 && x <= drivewayRightX(y)
 }
 
 /**
@@ -193,14 +220,17 @@ export function groundAt(x: number, y: number): number {
     z = z * (1 - w) + p.z * w
   }
 
-  // Driveway trench. Only ever cuts downward, and only in front of the façade.
+  // The driveway is held by walls on both long sides, so it overrides the ground outright. Off
+  // its open rear end it blends into the yard, which is at much the same level anyway.
   const d = DRIVEWAY
-  const inBand = y < d.yBottom ? Infinity : distToRect(x, y, d.x0, d.yBottom, d.x1, d.yTop)
-  if (inBand <= d.falloff) {
-    const t = Math.min(1, Math.max(0, (y - d.yBottom) / (d.yTop - d.yBottom)))
-    const rampZ = d.zBottom + (d.zTop - d.zBottom) * t
-    const w = 1 - smoothstep(0, d.falloff, inBand)
-    z = Math.min(z, z * (1 - w) + rampZ * w)
+  // The extra 0.15 m on the right runs the deck level in under the house wall, where the ground
+  // mesh tucks beneath the façade, so no sliver of the old slope shows at the foot of the wall.
+  if (x >= leftBoundaryX(y) - 0.3 && x <= drivewayRightX(y) + 0.15 && y <= d.yTop + 0.3) {
+    const dist = Math.max(0, d.court.y0 - y)
+    if (dist <= d.falloff) {
+      const w = 1 - smoothstep(0, d.falloff, dist)
+      z = z * (1 - w) + drivewayLevelAt(y) * w
+    }
   }
 
   return z
